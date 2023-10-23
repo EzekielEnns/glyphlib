@@ -1,0 +1,33 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>glyphlib</title>
+
+    <style>
+      html, head, body {
+        margin: 0;
+        padding: 25px;
+        background-color: #2a2a2a;
+      }
+
+      #demo-canvas {
+        width: 800px;
+        height: 800px;
+        background-color: #da6052;
+        /* Help to illustrate the rasterizer's job: when artificially lowering resolution, show pixelated image */
+        image-rendering: crisp-edges;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800px" height="800px">
+      <!-- This message shows up only if the Canvas element isn't supported -->
+      HTML5 canvas not supported in your browser! These demos will not work.
+    </canvas>
+    <script src="index.js"></script>
+  </body>
+</html>
