@@ -5,10 +5,11 @@ const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
 layout(location=1) in vec2 aTexCoord;
+uniform mat2 uRot;
 
 out vec2 vTexCoord;
 void main() {
-    gl_Position = aPos;
+    gl_Position = vec4((aPos.xy * uRot),aPos.zw);
     vTexCoord = aTexCoord;
 }
 `;
@@ -48,6 +49,7 @@ const pixels = new Uint8Array([
 
 var gl: WebGL2RenderingContext | null;
 var cns: HTMLCanvasElement | null;
+var prog: WebGLProgram | null
 
 function init() {
   cns = document.getElementById("canvas") as HTMLCanvasElement;
@@ -63,39 +65,33 @@ function bindShaders(vSrc: string, fSrc: string) {
       throw Error("no webgl")
   }
   //create and use program
-  const program = gl.createProgram();
+  prog = gl.createProgram();
   const vertexShader = gl.createShader(gl.VERTEX_SHADER);
   const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-  if (!program || !vertexShader || !fragShader) {
-      throw Error("bad program no shader")
+  if (!prog || !vertexShader || !fragShader) {
+      throw Error("bad prog no shader")
   }
   gl.shaderSource(vertexShader, vSrc);
   gl.compileShader(vertexShader);
-  gl.attachShader(program, vertexShader);
+  gl.attachShader(prog, vertexShader);
   gl.shaderSource(fragShader, fSrc);
   gl.compileShader(fragShader);
-  gl.attachShader(program, fragShader);
+  gl.attachShader(prog, fragShader);
 
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     console.log(gl.getShaderInfoLog(vertexShader));
     console.log(gl.getShaderInfoLog(fragShader));
   }
-  gl.useProgram(program);
+  gl.useProgram(prog);
 }
-
-function bindBuffers() {
-  if (!gl || !cns) {
+function bindBuffers(rad:number) {
+  if (!gl || !cns || !prog) {
       throw Error("no webgl")
   }
   const vertextBuffer = gl.createBuffer();
-  if (!vertextBuffer) {
-      throw Error("No vertextBuffer")
-  }
-
   gl.bindBuffer(gl.ARRAY_BUFFER,vertextBuffer)
   gl.bufferData(gl.ARRAY_BUFFER,vertexBufferData,gl.STATIC_DRAW)
-
   gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0)
   gl.enableVertexAttribArray(0)
 
@@ -104,42 +100,25 @@ function bindBuffers() {
   gl.bufferData(gl.ARRAY_BUFFER,texCoordBufferData,gl.STATIC_DRAW)
   gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0)
   gl.enableVertexAttribArray(1)
+    
+  const rotLocal = gl.getUniformLocation(prog,"uRot")
+  gl.uniformMatrix2fv(rotLocal,false, new Float32Array([
+      Math.cos(rad), Math.sin(rad),
+      -1* Math.sin(rad), Math.cos(rad)
+  ]))
 
   const texture = gl.createTexture()
   gl.bindTexture(gl.TEXTURE_2D,texture)
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB, 4,4,0,gl.RGB,gl.UNSIGNED_BYTE,pixels)
   gl.generateMipmap(gl.TEXTURE_2D)
-  //
-  // if (!texCoordBufferData) {
-  //     throw Error("No vertextBuffer")
-  // }
-  // const texture = gl.createTexture();
-  // gl.bindTexture(gl.TEXTURE_2D,texture)
-  // gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,4,4,0, gl.RGB, gl.UNSIGNED_BYTE, pixels)
-  //
-  // gl.generateMipmap(gl.TEXTURE_2D)
-  // gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST)
-  //
-  // if (!texture) {
-  //     throw Error("No vertextBuffer")
-  // }
 
   //create buffer
   //bind buffer with created one to a certain webgl object
   //set buffer data
   //set vertext attribPointer
   //enable vertexAttrib
-  
-  // const textureSlot1 = 1;
-  // gl.activeTexture(gl.TEXTURE0+textureSlot1)
-  // const texture = gl.createTexture();
-  // gl.bindTexture(gl.TEXTURE_2D, texture)
-  // gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,4,4,0,gl.RGB,gl.UNSIGNED_BYTE,0)
-  //
-  // gl.generateMipmap(gl.TEXTURE_2D)
-
 }
-
+var deg = 0.1
 function render() {
   if (!gl || !cns) {
       throw Error("no webgl")
@@ -162,13 +141,13 @@ function render() {
   // Bind shaders and buffers
   // bindShadersAndBuffers();
   bindShaders(vertShaderSrc,fragShaderSrc);
-  bindBuffers();
+  bindBuffers(deg* Math.PI / 180);
 
   // Issue draw calls to render objects
   gl.drawArrays(gl.TRIANGLES, 0,3);
 
   // Swap buffers if double buffering is used
-
+  deg++;
   // Request the next frame
   requestAnimationFrame(render);
 }
