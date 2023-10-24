@@ -45,6 +45,9 @@ const pixels = new Uint8Array([
 var gl: WebGL2RenderingContext | null;
 var cns: HTMLCanvasElement | null;
 var prog: WebGLProgram | null;
+//TODO look into how vaos work
+//tried to use a vao for different attribes for the same vertex!!!
+//thats not what they are for explain why
 var vao1: WebGLVertexArrayObject | null;
 
 function init() {
