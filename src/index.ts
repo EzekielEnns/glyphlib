@@ -1,3 +1,20 @@
+//what is in the atlas
+const img_width = 5;
+const img_height = 7;
+//deats about atlas (full img)
+const atlas_columns = 18;
+const atlas_rows = 6;
+const atlas_width = 128
+const atlas_height = 64;
+const atlas_count = 94;
+//watch 
+//https://youtu.be/w3im_9qbM18?t=451
+
+//generating atlas
+const atlas = {};
+for (const x of Array(94).keys()){
+    let p = x/94.0
+}
 //TODO rotate on loop
 //move tirangle around
 //change texture
@@ -155,7 +172,22 @@ function render() {
   // Request the next frame
   requestAnimationFrame(render);
 }
-init();
-bindShaders(vertShaderSrc, fragShaderSrc);
-bindBuffers()
-requestAnimationFrame(render);
+const loadAtlas = () => new Promise(resolve => {
+    const image = new Image();
+    image.src = "charmap-cellphone_black.png";
+    image.addEventListener('load', () => resolve(image));
+});
+(async () => {
+    const img = await loadAtlas();
+    init();
+    bindShaders(vertShaderSrc, fragShaderSrc);
+    bindBuffers()
+    bindTex(img as ImageData)
+    requestAnimationFrame(render);
+})()
+
+const texCoorData = new Float32Array(2*4)
+
+function bindTex(img:ImageData) {
+    
+}
