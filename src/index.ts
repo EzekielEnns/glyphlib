@@ -1,38 +1,35 @@
-//what is in the atlas
-const img_width = 5;
-const img_height = 7;
-//deats about atlas (full img)
-const atlas_columns = 18;
-const atlas_rows = 6;
-const atlas_width = 128
-const atlas_height = 64;
-const atlas_count = 94;
-//watch 
-//https://youtu.be/w3im_9qbM18?t=451
-//https://youtu.be/w3im_9qbM18?t=939
-//generating atlas
+let col = 18 //# of cols
+let row = 7 //# of rows
+let u = 7 // width of cell
+let v = 9 // height of cell
+let w = 128 //width of img
+let h = 64 // height of img
+/*
+
+so finally figured it out 
+my quads arent lining up and my mapping is displayed wrong 
+
+my quad isnt fully done/ hence the lack of the slant 
+
+    bottom left is 0,0
+    top-right is 1,1
+*/
 const atlas = {};
-for (const x of Array(94).keys()){
-    const col = x % atlas_columns;
-    const row = Math.floor(x/atlas_columns)
-
-    let u = (col * img_width)/atlas_width
-    let v = (row * img_height)/atlas_height
-    let w = img_width/atlas_width
-    let h = img_height/atlas_height
-
+for (const i of Array(94).keys()){
+    let c = i%col
+    let r = Math.floor(i/col % row)
     //@ts-ignore
-    atlas[String.fromCharCode(x+32)] = [
-        //6 verts
-        u, v+h,
-        u+w, v,
-        u,   v,
+    atlas[String.fromCharCode(i+32)]= [
+        (c*u)/w,     (     r*v)/h,
+        (c*u)/w,     ( (r+1)*v)/h,
+        ((c+i)*u)/w, ( (r+1)*v)/h,
 
-        u,   v+h,
-        u+w, v+h,
-        u+w, v,
+        (c*u)/w,     (      r*v)/h,
+        ((c+i)*u)/w, (      r*v)/h,
+        ((c+i)*u)/w, (  (r+1)*v)/h
     ]
 }
+console.log(atlas)
 //TODO rotate on loop
 //move tirangle around
 //change texture
@@ -62,14 +59,19 @@ void main() {
 }
 `;
 
+/*
+    * coordinate system is different here 
+     */
 const data = new Float32Array([
-    -1,0,  //quad
-    0,1,
-    -1,1,
-    -1,0,
-    0,0,
-    0,1,
+      -1,1,
+      -1,1,
+      1,-1,
+      -1,1,
+      1,1,
+      1,-1
 ]);
+
+
 
 var gl: WebGL2RenderingContext | null;
 var cns: HTMLCanvasElement | null;
@@ -122,6 +124,14 @@ function bindBuffers(img:ImageData) {
 
   const buff = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+  const test = new Float32Array([
+      0.0,0.0,
+      u/gl.canvas.width,0.0,
+      u/gl.canvas.width,v/gl.canvas.width,
+      0.0,0.0,
+      0.0,v/gl.canvas.width,
+      u/gl.canvas.width,v/gl.canvas.width,
+  ])
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   //stride means the postion for the next vertex so here we have 4 data points each 4 bytes
   //we read from offset 0 here 2 elements
@@ -136,13 +146,21 @@ function bindBuffers(img:ImageData) {
   gl.enableVertexAttribArray(1);
   gl.bindVertexArray(null);
   //@ts-ignore
-  texCordData.set(atlas['Z'],0);
+  texCordData.set([
+      0,1,
+      0,0,
+      1,0,
+      0,1,
+      1,1,
+      1,0
+  ],0);
+  console.log(texCordData)
   //@ts-ignore
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, atlas_width, atlas_height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 }
