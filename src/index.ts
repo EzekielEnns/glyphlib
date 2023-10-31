@@ -5,15 +5,12 @@ let v = 9 // height of cell
 let w = 128 //width of img
 let h = 64 // height of img
 /*
+0,1         1,1
 
-so finally figured it out 
-my quads arent lining up and my mapping is displayed wrong 
 
-my quad isnt fully done/ hence the lack of the slant 
-
-    bottom left is 0,0
-    top-right is 1,1
+0,0         1,0 
 */
+//generating atlas
 const atlas = {};
 for (const i of Array(94).keys()){
     let c = i%col
@@ -58,17 +55,19 @@ void main() {
     fragColor = texture(uSampler,vTexCoord);
 }
 `;
-
 /*
-    * coordinate system is different here 
-     */
+-1,1        1,1
+
+-1,-1       1,-1
+*/
 const data = new Float32Array([
-      -1,1,
-      -1,1,
-      1,-1,
-      -1,1,
-      1,1,
-      1,-1
+    -1,1,
+    -1,-1,
+    1,-1,
+    
+    -1,1,
+    1,1,
+    1,-1
 ]);
 
 
@@ -87,6 +86,8 @@ function init() {
   if (!gl) {
     throw Error("no webgl");
   }
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 }
 
 //TODO make more generic
@@ -145,7 +146,13 @@ function bindBuffers(img:ImageData) {
   gl.vertexAttribPointer( 1, 2, gl.FLOAT, false, 0,0);
   gl.enableVertexAttribArray(1);
   gl.bindVertexArray(null);
-  //@ts-ignore
+
+/*
+0,1         1,1
+
+
+0,0         1,0 
+  
   texCordData.set([
       0,1,
       0,0,
@@ -154,7 +161,24 @@ function bindBuffers(img:ImageData) {
       1,1,
       1,0
   ],0);
-  console.log(texCordData)
+
+  0,1
+    0+u/w,1,
+    0+u/w,1-y/h,
+    0+2u/w,1-y/h,
+    0+u/w,1,
+    0+2u/w,1,
+    0+2u/w,1-y/h
+*/
+  //@ts-ignore
+  texCordData.set([
+    0+u/w,1,
+    0+u/w,1-v/h,
+    0+2*u/w,1-v/h,
+    0+u/w,1,
+    0+2*u/w,1,
+    0+2*u/w,1-v/h
+  ],0);
   //@ts-ignore
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
