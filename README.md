@@ -1,3 +1,4 @@
+[best font](https://jadedtwin.itch.io/pixel-bold-font?download)
 ## notes on texture atlases
 webgl dose not care about power of 2 
 but texture atlas's do care

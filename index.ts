@@ -4,7 +4,7 @@ import { watch } from 'fs';
 
 Bun.build({
     entrypoints: ['./src/index.ts'],
-    outdir: './dist'
+    outdir: './dist',
 })
 const watcher = watch(import.meta.dir+"/src",()=>{
     Bun.build({

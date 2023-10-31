@@ -1,35 +1,3 @@
-let col = 18 //# of cols
-let row = 7 //# of rows
-let u = 7 // width of cell
-let v = 9 // height of cell
-let w = 128 //width of img
-let h = 64 // height of img
-/*
-0,1         1,1
-
-
-0,0         1,0 
-*/
-//generating atlas
-const atlas = {};
-for (const i of Array(94).keys()){
-    let c = i%col
-    let r = Math.floor(i/col % row)
-    //@ts-ignore
-    atlas[String.fromCharCode(i+32)]= [
-        (c*u)/w,     (     r*v)/h,
-        (c*u)/w,     ( (r+1)*v)/h,
-        ((c+i)*u)/w, ( (r+1)*v)/h,
-
-        (c*u)/w,     (      r*v)/h,
-        ((c+i)*u)/w, (      r*v)/h,
-        ((c+i)*u)/w, (  (r+1)*v)/h
-    ]
-}
-console.log(atlas)
-//TODO rotate on loop
-//move tirangle around
-//change texture
 const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -116,7 +84,7 @@ function bindShaders(vSrc: string, fSrc: string) {
   }
   gl.useProgram(prog);
 }
-function bindBuffers(img:ImageData) {
+function bindBuffers(img:ImageData, atlas:any) {
   if (!gl || !cns || !prog) {
     throw Error("no webgl");
   }
@@ -125,14 +93,6 @@ function bindBuffers(img:ImageData) {
 
   const buff = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buff);
-  const test = new Float32Array([
-      0.0,0.0,
-      u/gl.canvas.width,0.0,
-      u/gl.canvas.width,v/gl.canvas.width,
-      0.0,0.0,
-      0.0,v/gl.canvas.width,
-      u/gl.canvas.width,v/gl.canvas.width,
-  ])
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   //stride means the postion for the next vertex so here we have 4 data points each 4 bytes
   //we read from offset 0 here 2 elements
@@ -171,20 +131,21 @@ function bindBuffers(img:ImageData) {
     0+2u/w,1-y/h
 */
   //@ts-ignore
-  texCordData.set([
-    0+u/w,1,
-    0+u/w,1-v/h,
-    0+2*u/w,1-v/h,
-    0+u/w,1,
-    0+2*u/w,1,
-    0+2*u/w,1-v/h
-  ],0);
+  // texCordData.set(atlas["!"].map(),0);
   //@ts-ignore
+  texCordData.set([
+      0,1,
+      0,0,
+      1,0,
+      0,1,
+      1,1,
+      1,0
+  ],0);
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 }
@@ -221,16 +182,26 @@ function render() {
   // Request the next frame
   requestAnimationFrame(render);
 }
-const loadAtlas = () => new Promise(resolve => {
+const loadImg = () => new Promise(resolve => {
     const image = new Image();
-    image.src = "charmap-cellphone_black.png";
+    image.src = "test2.png";
     image.addEventListener('load', () => resolve(image));
 });
+
+const loadAtlas= () => new Promise(resolve => {
+    fetch("./monogram-bitmap.json")
+        .then((resp)=> resp.json())
+        .then((j)=>resolve(j))
+});
+
+const genGlyphMap = (atlasData:any) => {
+}
 (async () => {
-    const img = await loadAtlas();
+    const img = await loadImg();
+    const atlas = await loadAtlas();
     init();
     bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img as ImageData)
+    bindBuffers(img as ImageData, atlas as any)
     requestAnimationFrame(render);
 })()
 
