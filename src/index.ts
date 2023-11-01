@@ -1,3 +1,5 @@
+import { genAtlas } from "./texture";
+
 const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -188,20 +190,15 @@ const loadImg = () => new Promise(resolve => {
     image.addEventListener('load', () => resolve(image));
 });
 
-const loadAtlas= () => new Promise(resolve => {
-    fetch("./monogram-bitmap.json")
-        .then((resp)=> resp.json())
-        .then((j)=>resolve(j))
-});
 
 const genGlyphMap = (atlasData:any) => {
 }
 (async () => {
     const img = await loadImg();
-    const atlas = await loadAtlas();
+    await genAtlas("monogram.ttf",12)
     init();
     bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img as ImageData, atlas as any)
+    bindBuffers(img as ImageData, {})
     requestAnimationFrame(render);
 })()
 
