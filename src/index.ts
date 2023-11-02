@@ -135,14 +135,15 @@ function bindBuffers(img:ImageData, atlas:any) {
   //@ts-ignore
   // texCordData.set(atlas["!"].map(),0);
   //@ts-ignore
-  texCordData.set([
-      0,1,
-      0,0,
-      1,0,
-      0,1,
-      1,1,
-      1,0
-  ],0);
+  // texCordData.set([
+  //     0,1,
+  //     0,0,
+  //     1,0,
+  //     0,1,
+  //     1,1,
+  //     1,0
+  // ],0);
+  texCordData.set(atlas['E'],0)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
   const texture = gl.createTexture();
@@ -194,11 +195,10 @@ const loadImg = () => new Promise(resolve => {
 const genGlyphMap = (atlasData:any) => {
 }
 (async () => {
-    const img = await loadImg();
-    await genAtlas("monogram.ttf",12)
+    const {img,atlas} = await genAtlas("monogram.ttf")
     init();
     bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img as ImageData, {})
+    bindBuffers(img,atlas )
     requestAnimationFrame(render);
 })()
 

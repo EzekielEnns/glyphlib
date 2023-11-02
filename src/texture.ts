@@ -44,38 +44,55 @@ function genMap({w:iW,h:iH}:Dim,{w:gW,h:gH}:Dim,iter:Array<string>):AtlasMap{
     return aMap
 }
 
-export async function genAtlas(f:string,size:number):Promise<{img:ImageData, atlas:AtlasMap}> {
-    const columns = 26; 
-    let row = 0;
+export async function genAtlas(f:string):Promise<{img:ImageData, atlas:AtlasMap}> {
+    const columns = 26; //26 cuase i felt like it (can be any value)
+    let aMap:AtlasMap = {}
+    let row = 1;
+    let rowStep = 40; //TODO find out how to get these right for everyvalue
+    let colStep = 23; //these values seem like guessing
     const font = await load(f)
     const bitmap = document.createElement('canvas')
+    bitmap.width = columns*colStep;//Math.ceil(121/26)*40 
+    bitmap.height = Math.ceil(font.numGlyphs/columns)*rowStep
     const ctx = bitmap.getContext('2d')
     if (!ctx) {
         throw new Error()
     }
-    let y = 100
-    let x = 0
     for (let i = 0; i< font.numGlyphs; i++ ){
-        let g = font.glyphs.get(i)
-        let p = g.getPath(x,100)
-        if (x == columns-1){
+        if (i!=0 && i % columns == 0){
            row++ 
         }
+        let y = rowStep*(row)
+        let x = (i%columns)*colStep//25
+        console.log(x,",",y)
+        let g = font.glyphs.get(i)
+        g.draw(ctx,x,y)
+        if (g.unicode) {
+            /*
+                you have to record them from the top,
+                not the middle point in which they started from
+                i.e. first one is 
+                0,1,
+                x+colStep/h , 1
+                x
+            */
+            //note this only gets the first row!
+            let left = x/bitmap.width;
+            let right = (x+colStep)/bitmap.width;
+            let top = 1-(rowStep*(row-1)/bitmap.height)
+            let bottom = 1-(y/bitmap.height)
+            aMap[String.fromCharCode(g.unicode)] = [
+                left,top,
+                left,bottom,
+                right,bottom,
+
+                left,top,
+                right,top,
+                right,bottom
+            ]
+        }
     }
-    let g = font.charToGlyph("h")
-    g.draw(ctx,0,33) //33 for 72 for hieght
-    g = font.charToGlyph("i")
-    g.draw(ctx,0,66)
-    g = font.charToGlyph("1")
-    g.draw(ctx,22,66) //22 for 72 gives me exact
-    //spacing of 5 for 12
-    //spacing of 25 for 72
-    //ratio of 6:5
-    //meaning fontsize * 6, spacing * 5
-    var image = new Image()
-    image.src =bitmap.toDataURL()
-    document.write(image.outerHTML)
-    //TODO     var imageData = context.getImageData(character.x, character.y, character.width, character.height);
-    return {img:{} as ImageData,atlas:{}}
+    console.log(aMap["!"])
+    return {img:ctx.getImageData(0,0,bitmap.width,bitmap.height),atlas:aMap}
 }
 
