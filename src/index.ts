@@ -1,3 +1,4 @@
+import { load } from "opentype.js";
 import { genAtlas } from "./texture";
 //TODO add mapping to columns/rows 
 //TODO add animation step inbetween tixks 
@@ -46,7 +47,24 @@ const data = new Float32Array([
 
     0,1,
     1,1,
-    1,0
+    1,0,
+
+    
+    -1,0,
+    -1,-1,
+    0,-1,
+
+    -1,0,
+    0,0,
+    0,-1,
+    
+    0,0,
+    0,-1,
+    1,-1,
+
+    0,0,
+    1,0,
+    1,-1,
 ]);
 
 
@@ -124,8 +142,10 @@ function bindBuffers(img:ImageData, atlas:any) {
 
 0,0         1,0 
 */
-  texCordData.set(atlas['h'],0)
-  texCordData.set(atlas['i'],12)
+  texCordData.set(atlas['y'],0) //TODO add descender 
+  texCordData.set(atlas['.'],12)
+  texCordData.set(atlas['@'],24)
+  texCordData.set(atlas['.'],36)
   console.log(texCordData)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
   const texture = gl.createTexture();
@@ -158,7 +178,7 @@ function render() {
 
   // Issue draw calls to render objects
   gl.bindVertexArray(vao1); //setting up vao for objects
-  gl.drawArrays(gl.TRIANGLES, 0, 6*2);
+  gl.drawArrays(gl.TRIANGLES, 0, 6*4);
   gl.bindVertexArray(null);
   //for other do another round
 
@@ -169,11 +189,47 @@ function render() {
 }
 
 (async () => {
-    const {img,atlas} = await genAtlas("monogram.ttf")
-    init();
-    bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img,atlas )
-    requestAnimationFrame(render);
+    const bitmap = document.getElementById("canvas") as HTMLCanvasElement;
+    const ctx = bitmap.getContext('2d')
+    if (!ctx || !bitmap) {throw new Error("broke")}
+    const font = await load("monogram.ttf")
+    font.draw(ctx,"bobby flame",100,100)
+    ctx.beginPath()
+    ctx.moveTo(0,100)
+    ctx.lineTo(bitmap.width,100)
+    ctx.strokeStyle = "red"
+    ctx.stroke()
+    ctx.closePath()
+    ctx.beginPath()
+    let asc = 100- (font.ascender/font.unitsPerEm) * 72 
+    ctx.moveTo(0,asc)
+    ctx.lineTo(bitmap.width,asc)
+    ctx.lineWidth = 2
+    ctx.strokeStyle = "black"
+    ctx.stroke()
+    ctx.closePath()
+    let desc= 100- (font.descender/font.unitsPerEm * 72) 
+    ctx.moveTo(0,desc)
+    ctx.lineTo(bitmap.width,desc)
+    ctx.lineWidth = 2
+    ctx.strokeStyle = "Purple"
+    ctx.stroke()
+    ctx.closePath()
+    console.log(desc, "desc","asc",asc)
+    ctx.beginPath()
+    let n =200-((font.ascender/font.unitsPerEm) * 72) + Math.abs((font.descender/font.unitsPerEm * 72))
+    ctx.moveTo(0,n)
+    ctx.lineTo(bitmap.width,n)
+
+    ctx.stroke()
+
+    ctx.closePath()
+    font.draw(ctx,"gordon rambsy",100,n)
+    // const {img,atlas} = await genAtlas("monogram.ttf")
+    // init();
+    // bindShaders(vertShaderSrc, fragShaderSrc);
+    // bindBuffers(img,atlas )
+    // requestAnimationFrame(render);
 })()
 
 const texCoorData = new Float32Array(2*4)

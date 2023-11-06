@@ -42,8 +42,9 @@ export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:A
     let aMap:AtlasMap = {}
     let row = 1;
     const font = await load(f)
-    let rowStep = font.ascender/font.unitsPerEm * size; //top
-    let colStep = font.getAdvanceWidth("A",size); 
+    let rowStep = 0+(font.ascender/font.unitsPerEm * size); //top
+    let rowHeight = /*2*lastRowheight -*/ (font.ascender/font.unitsPerEm * size) + Math.abs((font.descender/font.unitsPerEm * size))
+    let colStep = font.getAdvanceWidth("A",size); //mono sapce assumed
     const bitmap = document.createElement('canvas')
     bitmap.width = columns*colStep;//Math.ceil(121/26)*40 
     bitmap.height = Math.ceil(font.numGlyphs/columns)*rowStep
@@ -55,8 +56,8 @@ export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:A
         if (i!=0 && i % columns == 0){
            row++ 
         }
-        let y = rowStep*(row)
-        let x = (i%columns)*colStep//25
+        let y = rowStep*(row)-1 //remove is a hack
+        let x = (i%columns)*colStep
         console.log(x,",",y)
         let g = font.glyphs.get(i)
         g.draw(ctx,x,y)
