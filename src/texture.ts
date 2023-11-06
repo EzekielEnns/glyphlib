@@ -1,12 +1,5 @@
 import { load } from 'opentype.js'
 /*
-
-two things this part can do 
-1) generate a bitmap image
-2) generate a map of the image
-
-156 x 216
-Texture coord system
 0,1         1,1
 
 
@@ -44,13 +37,13 @@ function genMap({w:iW,h:iH}:Dim,{w:gW,h:gH}:Dim,iter:Array<string>):AtlasMap{
     return aMap
 }
 
-export async function genAtlas(f:string):Promise<{img:ImageData, atlas:AtlasMap}> {
+export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:AtlasMap}> {
     const columns = 26; //26 cuase i felt like it (can be any value)
     let aMap:AtlasMap = {}
     let row = 1;
-    let rowStep = 40; //TODO find out how to get these right for everyvalue
-    let colStep = 23; //these values seem like guessing
     const font = await load(f)
+    let rowStep = font.ascender/font.unitsPerEm * size; //top
+    let colStep = font.getAdvanceWidth("A",size); 
     const bitmap = document.createElement('canvas')
     bitmap.width = columns*colStep;//Math.ceil(121/26)*40 
     bitmap.height = Math.ceil(font.numGlyphs/columns)*rowStep

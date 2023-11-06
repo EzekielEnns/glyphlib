@@ -1,5 +1,6 @@
+import { load } from "opentype.js";
 import { genAtlas } from "./texture";
-
+// TODO print both verties while mapped
 const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -32,12 +33,19 @@ void main() {
 */
 const data = new Float32Array([
     -1,1,
-    -1,-1,
-    1,-1,
-    
+    -1,0,
+     0,0,
+
     -1,1,
+     0,1,
+     0,0,
+
+    0,1,
     1,1,
-    1,-1
+    1,0,
+    0,1,
+    0,0,
+    1,1
 ]);
 
 
@@ -114,36 +122,11 @@ function bindBuffers(img:ImageData, atlas:any) {
 
 
 0,0         1,0 
-  
-  texCordData.set([
-      0,1,
-      0,0,
-      1,0,
-      0,1,
-      1,1,
-      1,0
-  ],0);
-
-  0,1
-    0+u/w,1,
-    0+u/w,1-y/h,
-    0+2u/w,1-y/h,
-    0+u/w,1,
-    0+2u/w,1,
-    0+2u/w,1-y/h
 */
-  //@ts-ignore
-  // texCordData.set(atlas["!"].map(),0);
-  //@ts-ignore
-  // texCordData.set([
-  //     0,1,
-  //     0,0,
-  //     1,0,
-  //     0,1,
-  //     1,1,
-  //     1,0
-  // ],0);
-  texCordData.set(atlas['E'],0)
+//some how missing how to render both at once 
+  texCordData.set(atlas['h'],0)
+
+  texCordData.set(atlas['i'],Float32Array.BYTES_PER_ELEMENT*6)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
   const texture = gl.createTexture();
@@ -185,15 +168,7 @@ function render() {
   // Request the next frame
   requestAnimationFrame(render);
 }
-const loadImg = () => new Promise(resolve => {
-    const image = new Image();
-    image.src = "test2.png";
-    image.addEventListener('load', () => resolve(image));
-});
 
-
-const genGlyphMap = (atlasData:any) => {
-}
 (async () => {
     const {img,atlas} = await genAtlas("monogram.ttf")
     init();
