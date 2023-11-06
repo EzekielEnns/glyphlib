@@ -1,6 +1,6 @@
-import { load } from "opentype.js";
 import { genAtlas } from "./texture";
-// TODO print both verties while mapped
+//TODO add mapping to columns/rows 
+//TODO add animation step inbetween tixks 
 const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -40,12 +40,13 @@ const data = new Float32Array([
      0,1,
      0,0,
 
+    0,1, //note other varitions of this will roate the texture
+    0,0,
+    1,0,
+
     0,1,
     1,1,
-    1,0,
-    0,1,
-    0,0,
-    1,1
+    1,0
 ]);
 
 
@@ -123,12 +124,10 @@ function bindBuffers(img:ImageData, atlas:any) {
 
 0,0         1,0 
 */
-//some how missing how to render both at once 
   texCordData.set(atlas['h'],0)
-
-  texCordData.set(atlas['i'],Float32Array.BYTES_PER_ELEMENT*6)
+  texCordData.set(atlas['i'],12)
+  console.log(texCordData)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
-
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -159,7 +158,7 @@ function render() {
 
   // Issue draw calls to render objects
   gl.bindVertexArray(vao1); //setting up vao for objects
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.drawArrays(gl.TRIANGLES, 0, 6*2);
   gl.bindVertexArray(null);
   //for other do another round
 
