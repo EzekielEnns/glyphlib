@@ -40,14 +40,14 @@ function genMap({w:iW,h:iH}:Dim,{w:gW,h:gH}:Dim,iter:Array<string>):AtlasMap{
 export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:AtlasMap}> {
     const columns = 26; //26 cuase i felt like it (can be any value)
     let aMap:AtlasMap = {}
-    let row = 1;
+    let row = 0;
     const font = await load(f)
-    let rowStep = 0+(font.ascender/font.unitsPerEm * size); //top
-    let rowHeight = /*2*lastRowheight -*/ (font.ascender/font.unitsPerEm * size) + Math.abs((font.descender/font.unitsPerEm * size))
+    let rowStep= (font.ascender/font.unitsPerEm * size) + Math.abs((font.descender/font.unitsPerEm * size))
+    let rowStart = (font.ascender/font.unitsPerEm * size) 
     let colStep = font.getAdvanceWidth("A",size); //mono sapce assumed
     const bitmap = document.createElement('canvas')
-    bitmap.width = columns*colStep;//Math.ceil(121/26)*40 
-    bitmap.height = Math.ceil(font.numGlyphs/columns)*rowStep
+    bitmap.width = columns*colStep;
+    bitmap.height = Math.ceil(font.numGlyphs/columns)*rowStep+rowStart
     const ctx = bitmap.getContext('2d')
     if (!ctx) {
         throw new Error()
@@ -56,25 +56,24 @@ export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:A
         if (i!=0 && i % columns == 0){
            row++ 
         }
-        let y = rowStep*(row)-1 //remove is a hack
+        let y = rowStart+(row)*rowStep
         let x = (i%columns)*colStep
-        console.log(x,",",y)
         let g = font.glyphs.get(i)
         g.draw(ctx,x,y)
         if (g.unicode) {
             /*
                 you have to record them from the top,
-                not the middle point in which they started from
+                note the middle point in which they started from
                 i.e. first one is 
                 0,1,
                 x+colStep/h , 1
                 x
+
             */
-            //note this only gets the first row!
             let left = x/bitmap.width;
             let right = (x+colStep)/bitmap.width;
-            let top = 1-(rowStep*(row-1)/bitmap.height)
-            let bottom = 1-(y/bitmap.height)
+            let top = 1-(y-rowStart)/bitmap.height;
+            let bottom = 1-(y+rowStep-rowStart)/bitmap.height;
             aMap[String.fromCharCode(g.unicode)] = [
                 left,top,
                 left,bottom,
@@ -86,7 +85,6 @@ export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:A
             ]
         }
     }
-    console.log(aMap["!"])
     return {img:ctx.getImageData(0,0,bitmap.width,bitmap.height),atlas:aMap}
 }
 
