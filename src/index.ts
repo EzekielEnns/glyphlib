@@ -193,3 +193,50 @@ function render() {
     bindBuffers(img,atlas )
     requestAnimationFrame(render);
 })()
+
+/*
+-1,1        1,1
+
+-1,-1       1,-1
+*/
+function generateVerteis(r:number,c:number){
+    let verts = new Float32Array(c*r*8) //8 floats per vertex
+    let indic = new Uint16Array(c*r*6)  //6 index's to use per quad
+    let row = 0;
+    let step = [2/c,2/r] //2width/column/width = 1/column why dose math like this get me pumped 
+    //so the two here comes from the processes of traversing the cartisain plane
+    //since we traveling over 2 units (-1 -> 1) we need the two there to make sure it maps right
+    //god dam why do i love this typeoh math so much
+
+    let start = [-1,-1] //x,y
+    for (let i=0; i<r*c; i++){
+        if (i!=0 && i % c== 0){
+           row++ 
+        }
+        //we start in -1,-1
+        let left = start[0]+(i % c * step[0]);
+        let right = left+step[0];
+        let top = start[1]+(row*step[1]);
+        let bot = top+step[1]; //fuuuucckkk math is rad
+
+        verts.set([
+            left, top,
+            right,top,
+            left,bot,
+            right,top,
+        ],i*8)
+
+        indic.set([
+           i, i+1, i+2,
+           i+2, i+1, i+3,
+        ],i*6)
+    }
+    return {verts,indic}
+}
+
+/*
+drawArrays vs drawElements
+    I will most likely use draw elements
+    https://github.com/scriptfoundry/WebGL2-Videos-Materials/blob/177f83c4be6c6e03c7fe620b0486081626503067/06.drawElements.js#L98C1-L105C74
+    https://webglfundamentals.org/webgl/lessons/webgl-indexed-vertices.html
+*/
