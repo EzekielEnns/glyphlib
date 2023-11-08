@@ -1,4 +1,4 @@
-import { genAtlas } from "./texture";
+import { AtlasMap, genAtlas } from "./texture";
 //TODO add mapping to columns/rows 
 //TODO add animation step inbetween tixks 
 const vertShaderSrc = `#version 300 es
@@ -116,6 +116,7 @@ function bindBuffers(img:ImageData, atlas:any) {
   if (!gl || !cns || !prog) {
     throw Error("no webgl");
   }
+  //TODO draw elements Swap to draw elements
   vao1 = gl.createVertexArray();
   gl.bindVertexArray(vao1);
 
@@ -188,6 +189,7 @@ function render() {
 
 (async () => {
     const {img,atlas} = await genAtlas("monogram.ttf")
+    console.log(generateVerteis(10,10,atlas));
     init();
     bindShaders(vertShaderSrc, fragShaderSrc);
     bindBuffers(img,atlas )
@@ -199,9 +201,10 @@ function render() {
 
 -1,-1       1,-1
 */
-function generateVerteis(r:number,c:number){
+function generateVerteis(r:number,c:number, atlas:AtlasMap){
     let verts = new Float32Array(c*r*8) //8 floats per vertex
     let indic = new Uint16Array(c*r*6)  //6 index's to use per quad
+    let tex = new Float32Array(c*r*6*2) //temp 
     let row = 0;
     let step = [2/c,2/r] //2width/column/width = 1/column why dose math like this get me pumped 
     //so the two here comes from the processes of traversing the cartisain plane
@@ -225,11 +228,15 @@ function generateVerteis(r:number,c:number){
             left,bot,
             right,top,
         ],i*8)
-
+        
+        //TODO fix this is wrong since we have to section off 6 vertexs
+        //note this maybe wrong have to check
         indic.set([
            i, i+1, i+2,
            i+2, i+1, i+3,
         ],i*6)
+        //TODO remove when testing done
+        tex.set(atlas['.'],i*6*2) //6 pairs(2') of floats 
     }
     return {verts,indic}
 }
@@ -239,4 +246,6 @@ drawArrays vs drawElements
     I will most likely use draw elements
     https://github.com/scriptfoundry/WebGL2-Videos-Materials/blob/177f83c4be6c6e03c7fe620b0486081626503067/06.drawElements.js#L98C1-L105C74
     https://webglfundamentals.org/webgl/lessons/webgl-indexed-vertices.html
+    animations
+https://chat.openai.com/share/4a7f0d72-568b-4f85-835a-dcf5a2200dd7
 */

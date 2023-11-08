@@ -5,7 +5,7 @@ import { load } from 'opentype.js'
 
 0,0         1,0 
 */
-interface AtlasMap {
+export interface AtlasMap {
     [glpyh:string]: Array<number>
 }
 
