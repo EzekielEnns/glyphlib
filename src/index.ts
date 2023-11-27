@@ -200,7 +200,24 @@ function render() {
 -1,1        1,1
 
 -1,-1       1,-1
+
+number of points = (2c) * (r+1)
+so we itter over that many points 
+we can itter over columns 
+
+for i<(2col)*(row+1)
+   r++
+   c = i % 2col
+   y = 1-(start-r*step/h)
+   x = start+c*step/w
+   //adding point to vertexts 
+   v[2i] = x; v[2i+1] = y
+   //adding point to vertexts
+
+how will we deal with the indices?
+thinking divde indices into sectors and map i into indices
 */
+
 function generateVerteis(r:number,c:number, atlas:AtlasMap){
     let verts = new Float32Array(c*r*8) //8 floats per vertex
     let indic = new Uint16Array(c*r*6)  //6 index's to use per quad
