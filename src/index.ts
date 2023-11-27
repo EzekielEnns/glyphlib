@@ -31,7 +31,8 @@ void main() {
 
 -1,-1       1,-1
 */
-const data = new Float32Array([
+const data = createGrid(800,800,10,10,[-1,-1])
+const test = new Float32Array([
     -1,1,
     -1,0,
      0,0,
@@ -68,23 +69,16 @@ const data = new Float32Array([
 
 
 
-var gl: WebGL2RenderingContext | null;
-var cns: HTMLCanvasElement | null;
 var prog: WebGLProgram | null;
-//TODO look into how vaos work
-//tried to use a vao for different attribes for the same vertex!!!
-//thats not what they are for explain why
 var vao1: WebGLVertexArrayObject | null;
 
-function init() {
-  cns = document.getElementById("canvas") as HTMLCanvasElement;
-  gl = cns.getContext("webgl2");
-  if (!gl) {
+var cns = document.getElementById("canvas") as HTMLCanvasElement;
+var gl = cns.getContext("webgl2");
+if (!gl || !cns ) {
     throw Error("no webgl");
-  }
-
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 }
+
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 //TODO make more generic
 function bindShaders(vSrc: string, fSrc: string) {
@@ -128,7 +122,7 @@ function bindBuffers(img:ImageData, atlas:any) {
   gl.vertexAttribPointer( 0, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(0);
 
-  const texCordData = new Float32Array(2*4*6)
+  const texCordData = new Float32Array(2*6*100)
   const texCordBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
   gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
@@ -142,10 +136,11 @@ function bindBuffers(img:ImageData, atlas:any) {
 
 0,0         1,0 
 */
-  texCordData.set(atlas['.'],0) //TODO findout why itterating by 12
-  texCordData.set(atlas['.'],12)
-  texCordData.set(atlas['.'],24)
-  texCordData.set(atlas['.'],36)
+    // for (let i=0; i<100; i++){
+    //   texCordData.set(atlas['.'],i*12)
+    // }
+  
+  texCordData.set(atlas['.'],0)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -177,7 +172,7 @@ function render() {
 
   // Issue draw calls to render objects
   gl.bindVertexArray(vao1); //setting up vao for objects
-  gl.drawArrays(gl.TRIANGLES, 0, 6*4);
+  gl.drawArrays(gl.TRIANGLES, 0, 6*100);
   gl.bindVertexArray(null);
   //for other do another round
 
@@ -187,12 +182,13 @@ function render() {
   requestAnimationFrame(render);
 }
 
+var atlas: AtlasMap
 (async () => {
-    const {img,atlas} = await genAtlas("monogram.ttf")
-    console.log(generateVerteis(10,10,atlas));
-    init();
-    bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img,atlas )
+    const obj = await genAtlas("monogram.ttf")
+    atlas = obj.atlas
+    console.log(createGrid(gl.canvas.width??0,gl.canvas.height??0,10,10,[-1,1]));
+     bindShaders(vertShaderSrc, fragShaderSrc);
+    bindBuffers(obj.img,atlas )
     requestAnimationFrame(render);
 })()
 
@@ -217,6 +213,59 @@ for i<(2col)*(row+1)
 how will we deal with the indices?
 thinking divde indices into sectors and map i into indices
 */
+
+function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
+    let W = gl?.canvas?.width??800
+    let H = gl?.canvas?.height??800
+    if (w>W || h>H) {
+        console.log(W)
+        console.log(H)
+        throw Error("box will not fit in canvas")
+    }
+
+    let current_Row = 0;
+    let verts = new Float32Array(c*r*12)    //12 verties needed 
+    //-1,1 -> 1,1 therefor step = w*c /(W/2) -> 2*w /(c*W)
+    let [stepX,stepY] = [2*w/(c*W),2*h/(r*H)]
+    console.log(stepX,"STEPX")
+    console.log(stepY,"STEPY")
+    let [startX,startY] = start
+
+    for (let i = 0; i <r*c; i++){
+        let current_Col = i%c
+        if (i!=0 && current_Col == 0){
+           current_Row++
+        }
+        
+        let top = startY - current_Row*stepY
+        let bottom = top - stepY
+        let left = startX + current_Col*stepX
+        let right = left + stepX
+
+        verts.set([
+            left,top,
+            left,bottom,
+            right,bottom,
+
+            left,top,
+            right,top,
+            right,bottom
+        ],i*12)
+        
+    }
+
+    return verts
+}
+
+/*
+        0       width/2
+-1,1       1,1
+
+1 = width/2
+1 = height/2
+*/
+
+
 
 function generateVerteis(r:number,c:number, atlas:AtlasMap){
     let verts = new Float32Array(c*r*8) //8 floats per vertex
