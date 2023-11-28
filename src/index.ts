@@ -1,6 +1,13 @@
+//good source 
+//https://dannywoodz.wordpress.com/2015/10/14/webgl-from-scratch-updating-textures/
+//TODO make api for updating grid
+    //using current setup on line: ~129
+//TODO add color uniform 
+    //https://github.com/EzekielEnns/glyphlib/blob/a9d8525b12552d50da8afad328f66e624af892a6/src/index.ts
+//TODO add smooth transtion
+//TODO deal with rescale
 import { AtlasMap, genAtlas } from "./texture";
-//TODO add mapping to columns/rows 
-//TODO add animation step inbetween tixks 
+
 const vertShaderSrc = `#version 300 es
 //precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -26,69 +33,23 @@ void main() {
     fragColor = texture(uSampler,vTexCoord);
 }
 `;
-/*
--1,1        1,1
 
--1,-1       1,-1
-*/
-//const data = createGrid(800,800,10,10,[-1,-1])
-const _ = new Float32Array([
-    -1,1,
-    -1,0,
-     0,0,
-
-    -1,1,
-     0,1,
-     0,0,
-
-    0,1, //note other varitions of this will roate the texture
-    0,0,
-    1,0,
-
-    0,1,
-    1,1,
-    1,0,
-
-    
-    -1,0,
-    -1,-1,
-    0,-1,
-
-    -1,0,
-    0,0,
-    0,-1,
-    
-    0,0,
-    0,-1,
-    1,-1,
-
-    0,0,
-    1,0,
-    1,-1,
-]);
-
-
-
-const columns = 2;
-const rows = 5;
+//IMPROVE scaling for atlas
+const columns = 25;
+const rows = 25;
 const vertCount = rows*columns
-const data = createGrid(800,800,columns,rows,[-1,1])
-var gl: WebGL2RenderingContext | null;
-var cns: HTMLCanvasElement | null;
+var data = createGrid(800,800,columns,rows,[-1,1])
+var texCordData = new Float32Array(2*6*vertCount)
 var prog: WebGLProgram | null;
-//TODO look into how vaos work
-//tried to use a vao for different attribes for the same vertex!!!
-//thats not what they are for explain why
-var vao1: WebGLVertexArrayObject | null;
-function init() {
-  cns = document.getElementById("canvas") as HTMLCanvasElement;
-  gl = cns.getContext("webgl2");
-  if (!gl) {
+var cns = document.getElementById("canvas") as HTMLCanvasElement;
+var gl = cns.getContext("webgl2");
+if (!gl) {
     throw Error("no webgl");
-  }
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 }
-
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+var texCordBuf = gl?.createBuffer()
+var posCordBuf = gl?.createBuffer()
+var vao1: WebGLVertexArrayObject | null;
 
 //TODO make more generic
 function bindShaders(vSrc: string, fSrc: string) {
@@ -116,7 +77,7 @@ function bindShaders(vSrc: string, fSrc: string) {
   }
   gl.useProgram(prog);
 }
-function bindBuffers(img:ImageData, atlas:any) {
+function bindBuffers(img:ImageData) {
   if (!gl || !cns || !prog) {
     throw Error("no webgl");
   }
@@ -124,33 +85,21 @@ function bindBuffers(img:ImageData, atlas:any) {
   vao1 = gl.createVertexArray();
   gl.bindVertexArray(vao1);
 
-  const buff = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buff);
+  gl.bindBuffer(gl.ARRAY_BUFFER, posCordBuf);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   //stride means the postion for the next vertex so here we have 4 data points each 4 bytes
   //we read from offset 0 here 2 elements
   gl.vertexAttribPointer( 0, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(0);
 
-  const texCordData = new Float32Array(2*6*vertCount)
-  const texCordBuf = gl.createBuffer();
+  //const texCordBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
   gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
   gl.vertexAttribPointer( 1, 2, gl.FLOAT, false, 0,0);
   gl.enableVertexAttribArray(1);
   gl.bindVertexArray(null);
 
-/*
-0,1         1,1
-
-
-0,0         1,0 
-*/
-    for (let i=0; i<vertCount; i++){
-      texCordData.set(atlas['.'],i*12)
-    }
-  
- // texCordData.set(atlas['.'],0)
+  //IMPROVE Texture arrays
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -159,8 +108,8 @@ function bindBuffers(img:ImageData, atlas:any) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 }
 
-var deg = 0.1;
-function render() {
+//var deg = 0.1;
+function render(atlas:AtlasMap,img:ImageData) {
   if (!gl || !cns || !prog) {
     throw Error("no webgl");
   }
@@ -178,55 +127,61 @@ function render() {
 
   //----- Set view and projection matrices (for 3D graphics)
 
-  //----- Bind shaders and buffers
+  //----- update buffers
+  texCordData.set(atlas['@'],
+                  Math.floor(Math.random()*rows*columns)
+              *12)
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
+  gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
 
-  // Issue draw calls to render objects
-  gl.bindVertexArray(vao1); //setting up vao for objects
+  //---- Issue draw calls
+  gl.bindVertexArray(vao1); 
   gl.drawArrays(gl.TRIANGLES, 0, 6*vertCount);
-  gl.bindVertexArray(null);
+  gl.bindVertexArray(null);     //unbind 
   //for other do another round
 
   //--- setup for next render
-  deg++;
+  //deg++;
   // Request the next frame
-  requestAnimationFrame(render);
+  requestAnimationFrame(()=>render(atlas,img));
 }
 
 (async () => {
     const {img,atlas} = await genAtlas("monogram.ttf")
-    console.log(createGrid(800,800,2,2,[-1,1]));
-    console.log(data);
-    init();
+    for (let i=0; i<vertCount; i++){
+        texCordData.set(atlas['.'],i*12)
+    }
     bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(img,atlas )
-    requestAnimationFrame(render);
+    bindBuffers(img)
+    requestAnimationFrame(()=>render(atlas,img));
 })()
 
 /*
 -1,1        1,1
 
 -1,-1       1,-1
-
-number of points = (2c) * (r+1)
-so we itter over that many points 
-we can itter over columns 
-
-for i<(2col)*(row+1)
-   r++
-   c = i % 2col
-   y = 1-(start-r*step/h)
-   x = start+c*step/w
-   //adding point to vertexts 
-   v[2i] = x; v[2i+1] = y
-   //adding point to vertexts
-
-how will we deal with the indices?
-thinking divde indices into sectors and map i into indices
 */
 
+/*
+This function generates a sized grid based on
+the size of the webgl context it is rendering to
+main issues here:
+    not checking for edge cases 
+        - box being out of bounds 
+        - box being out of bounds with start pos
+    IDea:
+        take ratio of w and h and multiply W and H
+        scale = Math.min(w/W,h/H) 
+        w = w*scale
+        h = h*scale
+    I need to add starting pos into this as well
+
+    IMPROVE use draw elements
+    requires indecies array to be outputed as well
+
+*/
 function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
-    //TODO set programaixally
-    //dimenstions for canvas
     let W = 800
     let H = 800
     if (w>W || h>H) {
@@ -274,22 +229,3 @@ function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
     return verts
 }
 
-/*
-        0       width/2
--1,1       1,1
-
-1 = width/2
-1 = height/2
-*/
-
-
-
-
-/*
-drawArrays vs drawElements
-    I will most likely use draw elements
-    https://github.com/scriptfoundry/WebGL2-Videos-Materials/blob/177f83c4be6c6e03c7fe620b0486081626503067/06.drawElements.js#L98C1-L105C74
-    https://webglfundamentals.org/webgl/lessons/webgl-indexed-vertices.html
-    animations
-https://chat.openai.com/share/4a7f0d72-568b-4f85-835a-dcf5a2200dd7
-*/
