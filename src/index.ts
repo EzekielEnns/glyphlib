@@ -31,8 +31,8 @@ void main() {
 
 -1,-1       1,-1
 */
-const data = createGrid(800,800,10,10,[-1,-1])
-const test = new Float32Array([
+//const data = createGrid(800,800,10,10,[-1,-1])
+const _ = new Float32Array([
     -1,1,
     -1,0,
      0,0,
@@ -69,16 +69,26 @@ const test = new Float32Array([
 
 
 
+const columns = 2;
+const rows = 5;
+const vertCount = rows*columns
+const data = createGrid(800,800,columns,rows,[-1,1])
+var gl: WebGL2RenderingContext | null;
+var cns: HTMLCanvasElement | null;
 var prog: WebGLProgram | null;
+//TODO look into how vaos work
+//tried to use a vao for different attribes for the same vertex!!!
+//thats not what they are for explain why
 var vao1: WebGLVertexArrayObject | null;
-
-var cns = document.getElementById("canvas") as HTMLCanvasElement;
-var gl = cns.getContext("webgl2");
-if (!gl || !cns ) {
+function init() {
+  cns = document.getElementById("canvas") as HTMLCanvasElement;
+  gl = cns.getContext("webgl2");
+  if (!gl) {
     throw Error("no webgl");
+  }
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 }
 
-gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 //TODO make more generic
 function bindShaders(vSrc: string, fSrc: string) {
@@ -122,7 +132,7 @@ function bindBuffers(img:ImageData, atlas:any) {
   gl.vertexAttribPointer( 0, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(0);
 
-  const texCordData = new Float32Array(2*6*100)
+  const texCordData = new Float32Array(2*6*vertCount)
   const texCordBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
   gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
@@ -136,11 +146,11 @@ function bindBuffers(img:ImageData, atlas:any) {
 
 0,0         1,0 
 */
-    // for (let i=0; i<100; i++){
-    //   texCordData.set(atlas['.'],i*12)
-    // }
+    for (let i=0; i<vertCount; i++){
+      texCordData.set(atlas['.'],i*12)
+    }
   
-  texCordData.set(atlas['.'],0)
+ // texCordData.set(atlas['.'],0)
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -172,7 +182,7 @@ function render() {
 
   // Issue draw calls to render objects
   gl.bindVertexArray(vao1); //setting up vao for objects
-  gl.drawArrays(gl.TRIANGLES, 0, 6*100);
+  gl.drawArrays(gl.TRIANGLES, 0, 6*vertCount);
   gl.bindVertexArray(null);
   //for other do another round
 
@@ -182,13 +192,13 @@ function render() {
   requestAnimationFrame(render);
 }
 
-var atlas: AtlasMap
 (async () => {
-    const obj = await genAtlas("monogram.ttf")
-    atlas = obj.atlas
-    console.log(createGrid(gl.canvas.width??0,gl.canvas.height??0,10,10,[-1,1]));
-     bindShaders(vertShaderSrc, fragShaderSrc);
-    bindBuffers(obj.img,atlas )
+    const {img,atlas} = await genAtlas("monogram.ttf")
+    console.log(createGrid(800,800,2,2,[-1,1]));
+    console.log(data);
+    init();
+    bindShaders(vertShaderSrc, fragShaderSrc);
+    bindBuffers(img,atlas )
     requestAnimationFrame(render);
 })()
 
@@ -215,18 +225,25 @@ thinking divde indices into sectors and map i into indices
 */
 
 function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
-    let W = gl?.canvas?.width??800
-    let H = gl?.canvas?.height??800
+    //TODO set programaixally
+    //dimenstions for canvas
+    let W = 800
+    let H = 800
     if (w>W || h>H) {
-        console.log(W)
-        console.log(H)
         throw Error("box will not fit in canvas")
     }
-
+    console.log("Cvs:",W,H,"Box:",w,h,"Dim:",c,r,"Str:",start)
     let current_Row = 0;
     let verts = new Float32Array(c*r*12)    //12 verties needed 
-    //-1,1 -> 1,1 therefor step = w*c /(W/2) -> 2*w /(c*W)
-    let [stepX,stepY] = [2*w/(c*W),2*h/(r*H)]
+    //grid is a 4 quad cartison plane
+    /*
+        -1,1    0,1     1,1
+                 0
+        -1,-1           1,-1
+    so if the canvas is 800x800 (WxH)
+        we need to take the column size 
+    */
+    let [stepX,stepY] = [(w/c)/(W/2),(h/r)/(H/2)]
     console.log(stepX,"STEPX")
     console.log(stepY,"STEPY")
     let [startX,startY] = start
@@ -267,45 +284,6 @@ function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
 
 
 
-function generateVerteis(r:number,c:number, atlas:AtlasMap){
-    let verts = new Float32Array(c*r*8) //8 floats per vertex
-    let indic = new Uint16Array(c*r*6)  //6 index's to use per quad
-    let tex = new Float32Array(c*r*6*2) //temp 
-    let row = 0;
-    let step = [2/c,2/r] //2width/column/width = 1/column why dose math like this get me pumped 
-    //so the two here comes from the processes of traversing the cartisain plane
-    //since we traveling over 2 units (-1 -> 1) we need the two there to make sure it maps right
-    //god dam why do i love this typeoh math so much
-
-    let start = [-1,-1] //x,y
-    for (let i=0; i<r*c; i++){
-        if (i!=0 && i % c== 0){
-           row++ 
-        }
-        //we start in -1,-1
-        let left = start[0]+(i % c * step[0]);
-        let right = left+step[0];
-        let top = start[1]+(row*step[1]);
-        let bot = top+step[1]; //fuuuucckkk math is rad
-
-        verts.set([
-            left, top,
-            right,top,
-            left,bot,
-            right,top,
-        ],i*8)
-        
-        //TODO fix this is wrong since we have to section off 6 vertexs
-        //note this maybe wrong have to check
-        indic.set([
-           i, i+1, i+2,
-           i+2, i+1, i+3,
-        ],i*6)
-        //TODO remove when testing done
-        tex.set(atlas['.'],i*6*2) //6 pairs(2') of floats 
-    }
-    return {verts,indic}
-}
 
 /*
 drawArrays vs drawElements
