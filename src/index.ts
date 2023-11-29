@@ -1,3 +1,44 @@
+/*plan for the final api
+
+    i will take a layering approche
+    glyph.initilize()
+    //done pre render loop
+    glyph.addLayer(name,program,...buffers,)
+    buffer {
+        type:vertex,cell,tex,color,other
+        data,
+        setup: (gl,d)=> { },
+        load:(gl,d)=>{ },
+        draw: (gl,d)=>{ }
+    }
+    //updates state for render loop
+    glyph.setLayer("name","buffer",(b)=>{ })
+
+    //based on the buffer type you can perforom
+    glyph.setLayer("characters",vertex,(b)=>{
+        b.moveCellTo([4,5],[10,4],100)
+
+        //note can also just modify buffer
+    }).drawLayer()
+
+    glyph.layer.drawLayer()
+    
+    glyph.vertex.createGrid(columns,rows,width,heigh,start)
+    glyph.tex.createAtlas(text)
+    glyph.tex.setTex(row,column,columns,value)
+    //sets a value in buffer 
+    glyph.tex.setColor(row,column,color)
+    
+    //hardest one
+    //need to make this changeable/overridable
+    //but also need this function to change state
+    glyph.vertex.moveCellTo(start,end,duration)
+    
+
+    //note settng up vao's is a optimization
+    //https://webglfundamentals.org/webgl/lessons/webgl-drawing-multiple-things.html
+
+*/
 //good source 
 //https://dannywoodz.wordpress.com/2015/10/14/webgl-from-scratch-updating-textures/
 //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
