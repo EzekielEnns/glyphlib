@@ -1,5 +1,78 @@
 /*plan for the final api
 
+    concepts for this lib
+    layers : these are collections of objects to draw
+                a layer needs a program,
+                buffers, setup code, and drawing code
+
+    buffers:    the defaults are vertices, tex and color
+                as a strech, adding a buffer would be nice
+
+    addressing a buffer can be done one of two ways:
+        cells:  assumes that vertices, tex and color are in quads
+                you address cell memebers via [row,column]
+        array:  assumes quads like cells but addressed as [cellNum]
+                usefull for things that move
+                as a strech it would be nice to pick either points or quads for this
+
+    we want to provide control over the render loop to the developer
+    we want the developer to access cells from any "buffer" 
+    something like 
+        diff = layer.get(0).getCell(5,5).distance(layer.get(1).getQuad(1));
+        layer.get(1).addQuad(1,diff);
+
+
+        layer.modify(1,(gl)=>{
+            gl.unfiorm..... do stuff just before render
+        })
+
+
+    ## Layers object is used to manage layers
+    layers.add(?program,[rows,columns],[height,width])
+    layers.add(?program,size)             //note add calls set a new vao
+    layers.setup(index,(gl)=>{})         //setup can be called after a add
+    layers.get(index)                   //returns a layer object
+    layers.render()                     //render all layers
+    layers.render(index)                //render layer at index
+    layers.modify(index,(gl)=>{ })      //modify layer, should be called before render
+
+    ## Layer object
+    layer.getQuad(index) -> quad            
+    layer.setQuadColor(index,color)
+    layer.setQuadTex(index,value)
+    lauer.setQuad(index,quad)
+
+    //you can replace Quad(index) with Cell([row,column]) or Point(index)
+    //Point dose not have a color or texture
+
+    
+    ## quad object
+    quad.distance(quad) -> quad
+    quad.add(quad)
+    quad.sub(quad)
+    quad.scale(quad)
+
+    /*
+        so lets say the player moves,
+        we want to capture that and make sure it happens in the proper frame
+        and progesses right
+        we need to ignore data that comes in untill the movment command is done
+        or inturrupt the movment call so that we can change course
+
+        so our render loop would look like 
+        OnInput -> alter cell location
+        render {
+            //apply animations
+            //render game
+        }
+
+        so your render loop needs to be designed around varibles that get modifed
+
+
+
+
+
+
     i will take a layering approche
     glyph.initilize()
     //done pre render loop
