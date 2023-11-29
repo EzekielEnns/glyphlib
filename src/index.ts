@@ -9,14 +9,17 @@
 import { AtlasMap, genAtlas } from "./texture";
 
 const vertShaderSrc = `#version 300 es
-//precision mediump float;
+precision mediump float;
 layout(location=0) in vec4 aPos;
 layout(location=1) in vec2 aTexCoord;
+layout(location=2) in vec3 aColor;
 
 out vec2 vTexCoord;
+out vec3 vColor;
 void main() {
     gl_Position = aPos;
     vTexCoord = aTexCoord;
+    vColor = aColor;
 }
 `;
 
@@ -24,13 +27,26 @@ const fragShaderSrc = `#version 300 es
 precision mediump float;
 
 in vec2 vTexCoord;
+in vec3 vColor;
 
 uniform sampler2D uSampler;
 
 out vec4 fragColor;
 
 void main() {
-    fragColor = texture(uSampler,vTexCoord);
+    vec4 texColor = texture(uSampler, vTexCoord);
+    
+    // Define the threshold for identifying black
+    float threshold = 0.1; // Adjust this threshold as needed
+    
+    // Check if the pixel color is close to black
+    if (texColor.r < threshold && texColor.g < threshold && texColor.b < threshold) {
+        // Replace black with red color
+        fragColor = vec4(0.5,0.5,0.5, texColor.a); // Red color (change as desired)
+        fragColor = vec4(vColor, texColor.a); // Red color (change as desired)
+    } else {
+        fragColor = texColor;
+    }
 }
 `;
 
@@ -97,7 +113,9 @@ function bindBuffers(img:ImageData) {
   gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
   gl.vertexAttribPointer( 1, 2, gl.FLOAT, false, 0,0);
   gl.enableVertexAttribArray(1);
-  gl.bindVertexArray(null);
+    
+  //cant put atrrib here first
+  //cause of the gl.subData call?
 
   //IMPROVE Texture arrays
   gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
@@ -106,6 +124,28 @@ function bindBuffers(img:ImageData) {
   gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+
+  //TODO abstarct away
+  //6 verties per thing,3 floats per vertex
+  // for (let i =0; i<-1; i++){
+  //     color.set([1.0,0.0,0.0],i*3)//white
+  // }
+  //gl.bufferSubData(gl.ARRAY_BUFFER,0,color)
+  var color = new Float32Array(vertCount*6*3);
+  color.fill(0.0)
+  for (let i =0; i<6; i++){
+      color.set([1.0,0.0,0.0],i*3)//white
+  }
+  //TODO find out why order matters here
+  var colorBuf = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER,colorBuf) 
+  gl.bufferData(gl.ARRAY_BUFFER,color.byteLength,gl.DYNAMIC_DRAW)
+  gl.vertexAttribPointer( 2, 3, gl.FLOAT, false, 0,0);
+  gl.enableVertexAttribArray(2);
+
+  gl.bindVertexArray(null);
+
+  gl.bufferSubData(gl.ARRAY_BUFFER,0,color)
 }
 
 //var deg = 0.1;
@@ -157,6 +197,12 @@ function render(atlas:AtlasMap,img:ImageData) {
     requestAnimationFrame(()=>render(atlas,img));
 })()
 
+//note that indexing starts at 0,0 for rows and column
+function drawCell(r:number,c:number,C:number,value:string,atlas:AtlasMap){
+    let i = r*C+c
+    texCordData.set(atlas[value],i*12)
+}
+
 /*
 -1,1        1,1
 
@@ -179,6 +225,8 @@ main issues here:
 
     IMPROVE use draw elements
     requires indecies array to be outputed as well
+
+    note that r and c are how we get resolution
 
 */
 function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
