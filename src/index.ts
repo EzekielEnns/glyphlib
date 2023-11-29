@@ -1,9 +1,7 @@
 //good source 
 //https://dannywoodz.wordpress.com/2015/10/14/webgl-from-scratch-updating-textures/
-//TODO make api for updating grid
-    //using current setup on line: ~129
-//TODO add color uniform 
-    //https://github.com/EzekielEnns/glyphlib/blob/a9d8525b12552d50da8afad328f66e624af892a6/src/index.ts
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules
+//TODO abstract
 //TODO add smooth transtion
 //TODO deal with rescale
 import { AtlasMap, genAtlas } from "./texture";
