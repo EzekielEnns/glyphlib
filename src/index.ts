@@ -166,7 +166,7 @@ void main() {
 const columns = 25;
 const rows = 25;
 const vertCount = rows*columns
-var data = createGrid(800,800,columns,rows,[-1,1])
+var data = createGrid(columns,rows,[0,0],[1,-1])
 var texCordData = new Float32Array(2*6*vertCount)
 var prog: WebGLProgram | null;
 var cns = document.getElementById("canvas") as HTMLCanvasElement;
@@ -300,6 +300,18 @@ function render(atlas:AtlasMap,img:ImageData) {
 }
 
 (async () => {
+    // let test = createGrid2(columns,rows,[-1,1],[1,-1])
+    // if (test.length != data.length) {
+    //     console.log(test,data)
+    //     throw new Error("not equal")
+    //
+    // }
+    // for (let i=0; i< data.length; i++) {
+    //     if (test[i] != data[i]) {
+    //         console.log(i,test[i],data[i])
+    //         throw new Error("not equal")
+    //     }
+    // }
     const {img,atlas} = await genAtlas("monogram.ttf")
     for (let i=0; i<vertCount; i++){
         texCordData.set(atlas['.'],i*12)
@@ -341,13 +353,9 @@ main issues here:
     note that r and c are how we get resolution
 
 */
-function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
-    let W = 800
-    let H = 800
-    if (w>W || h>H) {
-        throw Error("box will not fit in canvas")
-    }
-    console.log("Cvs:",W,H,"Box:",w,h,"Dim:",c,r,"Str:",start)
+
+
+function createGrid(r:number,c:number,start:Array<number>,end:Array<number>) {
     let current_Row = 0;
     let verts = new Float32Array(c*r*12)    //12 verties needed 
     //grid is a 4 quad cartison plane
@@ -358,7 +366,10 @@ function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
     so if the canvas is 800x800 (WxH)
         we need to take the column size 
     */
-    let [stepX,stepY] = [(w/c)/(W/2),(h/r)/(H/2)]
+    let [stepX,stepY] = [
+        Math.abs(end[0]-start[0])/c,
+        Math.abs(end[1]-start[1])/r
+    ]
     console.log(stepX,"STEPX")
     console.log(stepY,"STEPY")
     let [startX,startY] = start
@@ -388,4 +399,3 @@ function createGrid(w:number,h:number,r:number,c:number,start:Array<number>) {
 
     return verts
 }
-
