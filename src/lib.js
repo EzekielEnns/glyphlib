@@ -3,40 +3,46 @@
 //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain
 
 //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes
+//
+//TODO deal with resizing SOME where 
 
-
+/**
+ * initalizeds the webgl contex, and sets up the whole rendering setup
+ * it also holds the inital layers used for rendering each part onto the webgl context
+ */
 class Layers {
-    //holds a bunch of layers
     /**
      * @type {Array<Layer>}
      */
     #layers = []
 
-    constructor() {
+    /**
+     * @type {WebGL2RenderingContext}
+     */
+    gl 
+
+    /**
+     * @type {HTMLCanvasElement}
+     */
+    canvas 
+
+    constructor(gl,canvas) {
+        //setting up webgl and the canvas
     }
 
     /**
      * add a layer 
      * @param {number|[number,number]} size 
      * @param {[number,number]} [dimentions]
-     * @param {WebGLProgram} [program=]
+     * @param {Array<Float32Array>} [bufferData]
      */
-    add(size,[height,width],program) {
-        if(!program) {
-            //set default gl program
-        }
-        //array addressed layer 
-        if (typeof size == "number") {
-
-        } 
-        //grid based addressed layer 
-        else {
-            //create grid  using create git function
-        }
+    add(size,[height,width],bufferData) {
+        //calls the constructor for layer
+        //and lets it do is business
     }
 
     /**
-     * renders all layers using vao's by default
+     * calls all layers render functions
      */
     render() {
 
@@ -49,30 +55,124 @@ class Layers {
         return this.#layers[index]
     }
 
+    //TODO support programs - gotta look into them first
     //TODO modify(index, (gl)=>{})
-    //TODO setup
-    //TODO render(index)
+    //TODO setup(index,(gl)=>{})
 }
 
 /**
- * @class
- * @property {Float32Array} texData
- * @private
+ * represents a grouping/layer of vertices and other buffers 
+ * that get rendered by the layers object
+ *
+ * provides easy access to settinging and indexing parts of the 
+ * buffer data
+ *
+ * handles rendering and general access to a layer
  */
 class Layer {
     /**
-     * @type {Float32Array}
-     * @private
+     * @type {Array<Float32Array>} 
      */
-    #texData 
-    #colorData
+    data = []
+
+    /**
+     * @type {WebGLBuffer} - 0 is vertex, 1 is te
+     */
+    buffers = []
+
+    /**
+     * @type {WebGLVertexArrayObject}
+     */
+    vao
+    
+
+    /**
+     * this enum is for navigating values inside the buffers array
+     * this enables lib users to either add or modify how 
+     * a layer gets initilized, great for experimenting 
+     * @readonly
+     * @enum {number}
+     */
+    static bufferEnum = {
+        VERTICES: 0,
+        TEXS: 1,
+        COLORS: 2,
+    }
+
+    /**
+     * @param {number|[number,number]} size - length of buffers or grid of buffers
+     * @param {[number,number]} dimention  - dimentions to normalize to
+     * @param {Array<Float32Array>} [bufferData]
+     */
+    constructor(gl,size,dimention,bufferData) {
+        //bind buffers,
+        //initlize everything for vao
+        //setup all the things for this layer
+        //
+        //a layer is its buffers and everything in the vao
+        //
+        //
+        //note this would call create vertex grid
+
+    }
+
+    /**
+     * renders vao/layer onto webgl context
+     */
+    render(gl) {
+
+    }
+
+    /**
+     * @typedef {number|[number,number]} Index - either direct or grid index c,r
+     */
+
+    /**
+     *  this function chunks up the buffer data into quads
+     *  right now quads are 6 points/ 12 floats 
+     *  @param {Index} index - location for quad
+     */
+    getQuad(index) {
+    }
+    
+    /**
+     *  @param {Index} index - location for quad
+     *  @param {string} value - assumes atlas value
+     */
+    setQuadTex(index,value) {
+
+    }
+
+    /**
+     *  @param {Index} index - location for quad
+     *  @param {Float32Array} color - rgb 1-0
+     */
+    setQuadColor(index, color) {
+    }
+
+    //TODO future function could be getPoint(index)
+    //essentally quad just deals with data arrays as quads
+
+    //TODO indexing function for quads and for points
+
 
 }
 
 
 
+/**
+ * this class is a math helper to deal with quads
+ * please note quads are not optimized, they are 12 floats instead
+ * of buffer elements 
+ */
 class Quad {
     #values = new Float32Array(6*2) //6 points (triangles) 2 values per point
     //use slice and set 
     
 }
+
+
+//TODO setup global state
+//how this will work is there will be functions that let you interface
+//with these classes instead of dealing with there contruction directly
+//https://chat.openai.com/share/20db033f-40af-42f9-b7e3-cb2aa85dfb33

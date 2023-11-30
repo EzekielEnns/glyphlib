@@ -1,3 +1,15 @@
+## process for making this lib
+
+started with inital idea/experimentation with webgl
+
+once the expermentation showed enough results 
+where the code for a lib made sense
+
+the desing of a library was done,
+I chose using raw js to make the library more veristile
+
+
+
 [best font](https://jadedtwin.itch.io/pixel-bold-font?download)
 ## notes on texture atlases
 webgl dose not care about power of 2 
