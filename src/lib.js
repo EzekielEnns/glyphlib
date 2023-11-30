@@ -33,7 +33,8 @@ class Layers {
     /**
      * add a layer 
      * @param {number|[number,number]} size 
-     * @param {[number,number]} [dimentions]
+     * @param {[number,number]} [start]
+     * @param {[number,number]} [end]
      * @param {Array<Float32Array>} [bufferData]
      */
     add(size,[height,width],bufferData) {
@@ -85,6 +86,18 @@ class Layer {
      */
     vao
     
+    /**
+     * @type {number}
+     */
+    #columns = 0;
+    /**
+     * @type {number}
+     */
+    #rows = 0;
+    /**
+     * @type {number}
+     */
+    #length = 0;
 
     /**
      * this enum is for navigating values inside the buffers array
@@ -100,19 +113,47 @@ class Layer {
     }
 
     /**
+     * @param {WebGL2RenderingContext} gl 
+     * @param {boolean} is6 - must be 12 or 2
      * @param {number|[number,number]} size - length of buffers or grid of buffers
-     * @param {[number,number]} dimention  - dimentions to normalize to
-     * @param {Array<Float32Array>} [bufferData]
+     * @param {[number,number]} [start]
+     * @param {[number,number]} [end]
      */
-    constructor(gl,size,dimention,bufferData) {
-        //bind buffers,
-        //initlize everything for vao
-        //setup all the things for this layer
-        //
-        //a layer is its buffers and everything in the vao
-        //
-        //
-        //note this would call create vertex grid
+    constructor(gl,program,is6,size,points,start,end) {
+        /*
+            bind buffers,
+            initlize everything for vao
+            setup all the things for this layer
+            
+            a layer is its buffers and everything in the vao
+            
+            
+            note this would call create vertex grid
+        */
+        
+        let vertexSize = is6 ? 6:1
+        //layer is a given length
+        if (typeof size == "number") {
+            this.#length = size
+            this.data.push(new Float32Array(vertexSize*2*size)) //the two is for the two floats that makeup a point
+            this.data.push(new Float32Array(vertexSize*2*size)) //map atlas points to vertex points
+            this.data.push(new Float32Array(vertexSize*size*3)) //colors is a vec3
+        }
+        //layer is a set of quads
+        else {
+            [this.#rows,this.#columns] = size
+            this.#length = this.#columns*this.#rows
+            let grid = Layer.CreateVerticesGrid(this.#rows,this.#columns,start,end)
+            this.data.push(grid)
+            this.data.push(new Float32Array(vertexSize*2*this.#length))
+            this.data.push(new Float32Array(vertexSize*this.#length*3))
+        }
+
+        //create gl stuf
+        //create vao
+        this.vao = gl.createVertexArray()
+        //setup buffers
+        gl.
 
     }
 
@@ -155,7 +196,52 @@ class Layer {
 
     //TODO indexing function for quads and for points
 
+    /**
+     * creates a unoptimized grid of vertices, these are quads
+     * that overlap on the dimentions specifed, note start and end are normalized coords
+     * @param {number} rows 
+     * @param {number} columns
+     * @param {[number,number]} start - normalized 4 quadrent cartisan plane
+     * @param {[number,number]} end - normalized 4 quadrent cartisan plan
+     * @returns {Float32Array}
+     */
+    static CreateVerticesGrid(rows,columns,start,end) {
+        //TODO add check if start overlaps end
+        let current_Row = 0;
+        let verts = new Float32Array(columns*rows*12)
+        let [stepX,stepY] = [
+            Math.abs(end[0]-start[0])/columns,
+            Math.abs(end[1]-start[1])/rows
+        ]
+        console.log(stepX,"STEPX")
+        console.log(stepY,"STEPY")
+        let [startX,startY] = start
 
+        for (let i = 0; i <rows*columns; i++){
+            let current_Col = i%columns
+            if (i!=0 && current_Col == 0){
+               current_Row++
+            }
+            
+            let top = startY - current_Row*stepY
+            let bottom = top - stepY
+            let left = startX + current_Col*stepX
+            let right = left + stepX
+
+            verts.set([
+                left,top,
+                left,bottom,
+                right,bottom,
+
+                left,top,
+                right,top,
+                right,bottom
+            ],i*12)
+            
+        }
+
+        return verts
+    }
 }
 
 

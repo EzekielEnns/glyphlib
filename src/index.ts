@@ -166,7 +166,7 @@ void main() {
 const columns = 25;
 const rows = 25;
 const vertCount = rows*columns
-var data = createGrid(columns,rows,[0,0],[1,-1])
+var data = createGrid(columns,rows,[-1,1],[1,-1])
 var texCordData = new Float32Array(2*6*vertCount)
 var prog: WebGLProgram | null;
 var cns = document.getElementById("canvas") as HTMLCanvasElement;
@@ -280,7 +280,7 @@ function render(atlas:AtlasMap,img:ImageData) {
   //----- Set view and projection matrices (for 3D graphics)
 
   //----- update buffers
-  texCordData.set(atlas['@'],
+  texCordData.set(atlas['!'],
                   Math.floor(Math.random()*rows*columns)
               *12)
   gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
