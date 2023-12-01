@@ -120,9 +120,31 @@ class Layer {
      * @param {WebGL2RenderingContext} gl 
      * @param {Object} [options]
      * @param {Quad|GridDef} [options.params]
-     * @param {number} [length]
+     * @param {number} [length=1]
      */
     constructor(gl,options,length) {
+        length = length??1
+
+        if (options instanceof Quad) {
+            //add quads
+            this.#length = length
+            this.data.push(new Float32Array(6*2*length)) //the two is for the two floats that makeup a point
+            this.data.push(new Float32Array(6*2*length)) //map atlas points to vertex points
+            this.data.push(new Float32Array(6*length*3)) //colors is a vec3
+
+            for (let i =0; i <6*length; i++){
+                //set quads/step
+            }
+        } 
+        else if(options?.params?.rows) {
+            //setup grid
+            ////TODO make CreateVerticesGrid deconstruct
+            let grid = Layer.CreateVerticesGrid(options.params)
+            this.#length = options.params.rows * options.params.columns
+            this.data.push(grid) //the two is for the two floats that makeup a point
+            this.data.push(new Float32Array(grid.length)) //map atlas points to vertex points
+            this.data.push(new Float32Array(6*length*3)) //colors is a vec3
+        }
         /*
             bind buffers,
             initlize everything for vao
@@ -133,7 +155,6 @@ class Layer {
             
             note this would call create vertex grid
         */
-        
         // let vertexSize = is6 ? 6:1
         // //layer is a given length
         // if (typeof size == "number") {
@@ -167,15 +188,19 @@ class Layer {
     }
 
     /**
-     * @typedef {number|[number,number]} Index - either direct or grid index c,r
+     * @typedef {number|{c:number,r:number}} Index - either direct or grid index c,r
      */
 
     /**
      *  this function chunks up the buffer data into quads
      *  right now quads are 6 points/ 12 floats 
      *  @param {Index} index - location for quad
+     *  @returns {Quad}
      */
     getQuad(index) {
+        //TODO determin index
+        return new Quad(this.data[Layer.bufferEnum.VERTICES]
+            .slice(index,index+12));
     }
     
     /**
@@ -201,19 +226,20 @@ class Layer {
     /**
      * creates a unoptimized grid of vertices, these are quads
      * that overlap on the dimentions specifed, note start and end are normalized coords
-     * @param {number} rows 
-     * @param {number} columns
-     * @param {[number,number]} start - normalized 4 quadrent cartisan plane
-     * @param {[number,number]} end - normalized 4 quadrent cartisan plan
+     * @param {object} params
+     * @param {number} params.rows 
+     * @param {number} params.columns
+     * @param {Coord} params.start - normalized 4 quadrent cartisan plane
+     * @param {Coord} params.end - normalized 4 quadrent cartisan plan
      * @returns {Float32Array}
      */
-    static CreateVerticesGrid(rows,columns,start,end) {
+    static CreateVerticesGrid({rows,columns,start,end}) {
         //TODO add check if start overlaps end
         let current_Row = 0;
         let verts = new Float32Array(columns*rows*12)
         let [stepX,stepY] = [
-            Math.abs(end[0]-start[0])/columns,
-            Math.abs(end[1]-start[1])/rows
+            Math.abs(end.x-start.x)/columns,
+            Math.abs(end.y-start.y)/rows
         ]
         console.log(stepX,"STEPX")
         console.log(stepY,"STEPY")
@@ -265,14 +291,19 @@ class Quad {
     }
 
     /**
-     * returns a new quad that is this quad with the added differnce
-     * between it and a full translation in the direction of
-     * normalized coordaninates
+     * adds the differnce between it and a full translation in the direction of
+     * normalized coordaninates, returns self
      * @param {Coord} dir - normalized coordaninates orgin is center of quad
      * @param {number} [scale]
      * @returns {Quad}
      */
     step(dir,scale){
+        //TODO add check if quad is in bounds of webgl coord
+        scale = scale??1
+        for (let i = 0; i<12;i+=2){
+            this.#values[i] += this.#values[i]*scale*dir.x
+            this.#values[i+1] += this.#values[i+1]*scale*dir.y
+        }
         return this
     }
 
@@ -282,6 +313,10 @@ class Quad {
      * @returns {Quad}
      */
     scale(factor) {
+        //TODO check if in bounds of game
+        for (let i = 0; i<12;i+=2){
+            this.#values[i] *= factor
+        }
         return this
     }
 
@@ -344,12 +379,8 @@ class Quad {
 //     }
 //
 //     let pQuad =l2.getQuad(0)
-//     let pQuadNew = pQuad.add(
-//                     pQuad.
-//                         getDirectionDiff(Quad.Direction.Up)
-//                              .scale(0.1)//progress diff over time
-//                     )
-//     l2.setQuad(0,pQuadNew)
+//     pQuad.step({x:0,y:1},0.5)
+//     l2.setQuad(0,pQuad)
 //
 //
 // }
