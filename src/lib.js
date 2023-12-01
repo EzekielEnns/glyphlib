@@ -111,15 +111,18 @@ class Layer {
         TEXS: 1,
         COLORS: 2,
     }
+    /**
+     */
 
     /**
+     * @typedef {{x:number,y:number}} Coord
+     * @typedef {{start:Coord,end:Coord,rows:number,columns:number}} GridDef
      * @param {WebGL2RenderingContext} gl 
-     * @param {boolean} is6 - must be 12 or 2
-     * @param {number|[number,number]} size - length of buffers or grid of buffers
-     * @param {[number,number]} [start]
-     * @param {[number,number]} [end]
+     * @param {Object} [options]
+     * @param {Quad|GridDef} [options.params]
+     * @param {number} [length]
      */
-    constructor(gl,program,is6,size,points,start,end) {
+    constructor(gl,options,length) {
         /*
             bind buffers,
             initlize everything for vao
@@ -131,29 +134,28 @@ class Layer {
             note this would call create vertex grid
         */
         
-        let vertexSize = is6 ? 6:1
-        //layer is a given length
-        if (typeof size == "number") {
-            this.#length = size
-            this.data.push(new Float32Array(vertexSize*2*size)) //the two is for the two floats that makeup a point
-            this.data.push(new Float32Array(vertexSize*2*size)) //map atlas points to vertex points
-            this.data.push(new Float32Array(vertexSize*size*3)) //colors is a vec3
-        }
-        //layer is a set of quads
-        else {
-            [this.#rows,this.#columns] = size
-            this.#length = this.#columns*this.#rows
-            let grid = Layer.CreateVerticesGrid(this.#rows,this.#columns,start,end)
-            this.data.push(grid)
-            this.data.push(new Float32Array(vertexSize*2*this.#length))
-            this.data.push(new Float32Array(vertexSize*this.#length*3))
-        }
-
-        //create gl stuf
-        //create vao
-        this.vao = gl.createVertexArray()
-        //setup buffers
-        gl.
+        // let vertexSize = is6 ? 6:1
+        // //layer is a given length
+        // if (typeof size == "number") {
+        //     this.#length = size
+        //     this.data.push(new Float32Array(vertexSize*2*size)) //the two is for the two floats that makeup a point
+        //     this.data.push(new Float32Array(vertexSize*2*size)) //map atlas points to vertex points
+        //     this.data.push(new Float32Array(vertexSize*size*3)) //colors is a vec3
+        // }
+        // //layer is a set of quads
+        // else {
+        //     [this.#rows,this.#columns] = size
+        //     this.#length = this.#columns*this.#rows
+        //     let grid = Layer.CreateVerticesGrid(this.#rows,this.#columns,start,end)
+        //     this.data.push(grid)
+        //     this.data.push(new Float32Array(vertexSize*2*this.#length))
+        //     this.data.push(new Float32Array(vertexSize*this.#length*3))
+        // }
+        //
+        // //create gl stuf
+        // //create vao
+        // this.vao = gl.createVertexArray()
+        // //setup buffers
 
     }
 
@@ -255,6 +257,48 @@ class Quad {
     #values = new Float32Array(6*2) //6 points (triangles) 2 values per point
     //use slice and set 
     
+    /**
+     * @param {Float32Array} values 
+     */
+    constructor(values){
+        this.#values = values
+    }
+
+    /**
+     * returns a new quad that is this quad with the added differnce
+     * between it and a full translation in the direction of
+     * normalized coordaninates
+     * @param {Coord} dir - normalized coordaninates orgin is center of quad
+     * @param {number} [scale]
+     * @returns {Quad}
+     */
+    step(dir,scale){
+        return this
+    }
+
+    /**
+     * returns a quad with all points scaled to a factor 
+     *
+     * @returns {Quad}
+     */
+    scale(factor) {
+        return this
+    }
+
+
+    /**
+     * @returns {Float32Array}
+     */
+    get values() {
+        return this.#values
+    }
+
+    //TODO
+    // add(q){ }
+    // sub(q){ }
+    // diff(q){ }
+    
+    
 }
 
 
@@ -262,3 +306,50 @@ class Quad {
 //how this will work is there will be functions that let you interface
 //with these classes instead of dealing with there contruction directly
 //https://chat.openai.com/share/20db033f-40af-42f9-b7e3-cb2aa85dfb33
+
+// init()
+//
+// //layer 1 map
+// addlayer({
+// {
+//             start:{x:-1,y:1},
+//             end:{x:1,y:-1},
+//             rows:10,columns:10
+//     }
+// })
+//
+//
+// addlayer({
+//     quad:getLayer(0).getQuad(0)
+// },10)
+//
+// for i in range(10) {
+//     this.vertices.set(quad.StepDirection("right").scale(i).data(),i*12)
+// }
+//
+// addLayer({ points,buffers:[
+//     [1,1,-1,1]
+//     [1,1,1,1]
+//     [1,1]
+// ],program:someGlProg },10)
+//
+//
+//
+//
+// renderLoop(){
+//     let l1 = getLayer(1)
+//     let l2 = getLayer(2)
+//     for i,v in gameState {
+//        l1.setTex(i,v) 
+//     }
+//
+//     let pQuad =l2.getQuad(0)
+//     let pQuadNew = pQuad.add(
+//                     pQuad.
+//                         getDirectionDiff(Quad.Direction.Up)
+//                              .scale(0.1)//progress diff over time
+//                     )
+//     l2.setQuad(0,pQuadNew)
+//
+//
+// }
