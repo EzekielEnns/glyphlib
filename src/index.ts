@@ -222,7 +222,7 @@ function bindBuffers(img:ImageData) {
 
   //const texCordBuf = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texCordBuf)
-  gl.bufferData(gl.ARRAY_BUFFER,texCordData.byteLength, gl.DYNAMIC_DRAW)
+  gl.bufferData(gl.ARRAY_BUFFER,texCordData, gl.DYNAMIC_DRAW)
   gl.vertexAttribPointer( 1, 2, gl.FLOAT, false, 0,0);
   gl.enableVertexAttribArray(1);
     
@@ -230,7 +230,7 @@ function bindBuffers(img:ImageData) {
   //cause of the gl.subData call?
 
   //IMPROVE Texture arrays
-  gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
+ // gl.bufferSubData(gl.ARRAY_BUFFER,0,texCordData)
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -251,13 +251,13 @@ function bindBuffers(img:ImageData) {
   //TODO find out why order matters here
   var colorBuf = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER,colorBuf) 
-  gl.bufferData(gl.ARRAY_BUFFER,color.byteLength,gl.DYNAMIC_DRAW)
+  gl.bufferData(gl.ARRAY_BUFFER,color,gl.DYNAMIC_DRAW)
   gl.vertexAttribPointer( 2, 3, gl.FLOAT, false, 0,0);
   gl.enableVertexAttribArray(2);
 
   gl.bindVertexArray(null);
 
-  gl.bufferSubData(gl.ARRAY_BUFFER,0,color)
+  //gl.bufferSubData(gl.ARRAY_BUFFER,0,color)
 }
 
 //var deg = 0.1;

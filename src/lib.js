@@ -6,6 +6,50 @@
 //
 //TODO deal with resizing SOME where 
 
+const vSrc = `#version 300 es
+precision mediump float;
+layout(location=0) in vec4 aPos;
+layout(location=1) in vec2 aTexCoord;
+layout(location=2) in vec3 aColor;
+
+out vec2 vTexCoord;
+out vec3 vColor;
+void main() {
+    gl_Position = aPos;
+    vTexCoord = aTexCoord;
+    vColor = aColor;
+}
+`;
+
+//TODO make colors a vec4 for a value
+const fSrc = `#version 300 es
+precision mediump float;
+
+in vec2 vTexCoord;
+in vec3 vColor;
+
+uniform sampler2D uSampler;
+
+out vec4 fragColor;
+
+void main() {
+    vec4 texColor = texture(uSampler, vTexCoord);
+    
+    // Define the threshold for identifying black
+    float threshold = 0.1; // Adjust this threshold as needed
+    
+    // Check if the pixel color is close to black
+    if (texColor.r < threshold && texColor.g < threshold && texColor.b < threshold) {
+        // Replace black with red color
+        fragColor = vec4(0.5,0.5,0.5, texColor.a); // Red color (change as desired)
+        fragColor = vec4(vColor, texColor.a); // Red color (change as desired)
+    } else {
+        fragColor = texColor;
+    }
+}
+`;
+
+
 /**
  * initalizeds the webgl contex, and sets up the whole rendering setup
  * it also holds the inital layers used for rendering each part onto the webgl context
@@ -26,8 +70,47 @@ class Layers {
      */
     canvas 
 
-    constructor(gl,canvas) {
+    /**
+     * @typedef {Object.<string,Float32Array>} Atlas 
+     * @type Atlas
+     */
+    atlas
+
+    //FIXME gotta add types
+    constructor(canvas,img,atlas) {
+
         //setting up webgl and the canvas
+        try {
+            let gl = canvas.getContext("webgl2");
+        
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+            //bind program TODO can be layer specific
+            const prog = gl.createProgram();
+            const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+            const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(vertexShader, vSrc);
+            gl.compileShader(vertexShader);
+            gl.attachShader(prog, vertexShader);
+            gl.shaderSource(fragShader, fSrc);
+            gl.compileShader(fragShader);
+            gl.attachShader(prog, fragShader);
+
+            gl.linkProgram(prog);
+            gl.useProgram(prog);
+
+            //bind texture TODO can be layer specific
+            const texture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+
+            this.gl = gl
+        } catch (e){
+            throw e
+        }
+
     }
 
     /**
@@ -38,6 +121,7 @@ class Layers {
      * @param {Array<Float32Array>} [bufferData]
      */
     add(size,[height,width],bufferData) {
+        //FIXME
         //calls the constructor for layer
         //and lets it do is business
     }
@@ -47,6 +131,11 @@ class Layers {
      */
     render() {
 
+      // cns.width = cns.clientWidth;
+      // cns.height = cns.clientHeight;
+      this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
+      this.gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      this.#layers.forEach(l=>l.render(this.gl))
     }
 
     /**
@@ -133,58 +222,56 @@ class Layer {
             this.data.push(new Float32Array(6*length*3)) //colors is a vec3
 
             for (let i =0; i <6*length; i++){
-                //set quads/step
+                this.data[0].set(options.values,i*6)
+                if (options.width > 1) {
+                    options.step(0,1)
+                } else {
+                    options.step(1,0)
+                }
+                //no y over flow detected 
             }
         } 
         else if(options?.params?.rows) {
             //setup grid
-            ////TODO make CreateVerticesGrid deconstruct
             let grid = Layer.CreateVerticesGrid(options.params)
             this.#length = options.params.rows * options.params.columns
             this.data.push(grid) //the two is for the two floats that makeup a point
             this.data.push(new Float32Array(grid.length)) //map atlas points to vertex points
             this.data.push(new Float32Array(6*length*3)) //colors is a vec3
         }
-        /*
-            bind buffers,
-            initlize everything for vao
-            setup all the things for this layer
-            
-            a layer is its buffers and everything in the vao
-            
-            
-            note this would call create vertex grid
-        */
-        // let vertexSize = is6 ? 6:1
-        // //layer is a given length
-        // if (typeof size == "number") {
-        //     this.#length = size
-        //     this.data.push(new Float32Array(vertexSize*2*size)) //the two is for the two floats that makeup a point
-        //     this.data.push(new Float32Array(vertexSize*2*size)) //map atlas points to vertex points
-        //     this.data.push(new Float32Array(vertexSize*size*3)) //colors is a vec3
-        // }
-        // //layer is a set of quads
-        // else {
-        //     [this.#rows,this.#columns] = size
-        //     this.#length = this.#columns*this.#rows
-        //     let grid = Layer.CreateVerticesGrid(this.#rows,this.#columns,start,end)
-        //     this.data.push(grid)
-        //     this.data.push(new Float32Array(vertexSize*2*this.#length))
-        //     this.data.push(new Float32Array(vertexSize*this.#length*3))
-        // }
-        //
-        // //create gl stuf
-        // //create vao
-        // this.vao = gl.createVertexArray()
-        // //setup buffers
 
+        this.vao = gl.createVertexArray();
+        gl.bindVertexArray(this.vao)
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.VERTICES)
+        gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.VERTICES],
+            gl.STATIC_DRAW)
+        gl.vertexAttribPointer(Layer.bufferEnum.VERTICES,2,gl.FLOAT,false,0,0)
+        gl.enableVertexAttribArray(Layer.bufferEnum.VERTICES)
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.TEXS)
+        gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.TEXS],
+            gl.DYNAMIC_DRAW)
+        gl.vertexAttribPointer(Layer.bufferEnum.TEXS,2,gl.FLOAT,false,0,0)
+        gl.enableVertexAttribArray(Layer.bufferEnum.TEXS)
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.COLORS)
+        gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.COLORS],
+            gl.DYNAMIC_DRAW)
+        gl.vertexAttribPointer(Layer.bufferEnum.COLORS,3,gl.FLOAT,false,0,0)
+        gl.enableVertexAttribArray(Layer.bufferEnum.COLORS)
+
+        gl.bindVertexArray(null);
     }
 
     /**
+     * @param {WebGL2RenderingContext} gl 
      * renders vao/layer onto webgl context
      */
     render(gl) {
-
+        gl.bindVertexArray(this.vao)
+        gl.drawArrays(gl.TRIANGLES,0,6*this.#length)
+        gl.bindVertexArray(null)
     }
 
     /**
@@ -198,7 +285,7 @@ class Layer {
      *  @returns {Quad}
      */
     getQuad(index) {
-        //TODO determin index
+        //FIXME get index
         return new Quad(this.data[Layer.bufferEnum.VERTICES]
             .slice(index,index+12));
     }
@@ -208,7 +295,9 @@ class Layer {
      *  @param {string} value - assumes atlas value
      */
     setQuadTex(index,value) {
-
+        //FIXME get index and set column value
+        // let i = r*C+c
+        // texCordData.set(atlas[value],i*12)
     }
 
     /**
@@ -216,12 +305,10 @@ class Layer {
      *  @param {Float32Array} color - rgb 1-0
      */
     setQuadColor(index, color) {
+        //FIXME get index and set column value
+        // let i = r*C+c
+        // colorData.set(color,i*3)
     }
-
-    //TODO future function could be getPoint(index)
-    //essentally quad just deals with data arrays as quads
-
-    //TODO indexing function for quads and for points
 
     /**
      * creates a unoptimized grid of vertices, these are quads
@@ -290,6 +377,14 @@ class Quad {
         this.#values = values
     }
 
+    get width() {
+        return this.#values[2] - this.#values[0]
+    }
+    
+    get height() {
+        return this.#values[1] - this.#values[5]
+    }
+
     /**
      * adds the differnce between it and a full translation in the direction of
      * normalized coordaninates, returns self
@@ -298,7 +393,7 @@ class Quad {
      * @returns {Quad}
      */
     step(dir,scale){
-        //TODO add check if quad is in bounds of webgl coord
+        //FIXME check if in bounds with webgl context
         scale = scale??1
         for (let i = 0; i<12;i+=2){
             this.#values[i] += this.#values[i]*scale*dir.x
@@ -313,7 +408,6 @@ class Quad {
      * @returns {Quad}
      */
     scale(factor) {
-        //TODO check if in bounds of game
         for (let i = 0; i<12;i+=2){
             this.#values[i] *= factor
         }
@@ -337,7 +431,7 @@ class Quad {
 }
 
 
-//TODO setup global state
+//FIXME setup global state
 //how this will work is there will be functions that let you interface
 //with these classes instead of dealing with there contruction directly
 //https://chat.openai.com/share/20db033f-40af-42f9-b7e3-cb2aa85dfb33
