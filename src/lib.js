@@ -6,6 +6,8 @@
 //
 //TODO deal with resizing SOME where 
 
+import { genAtlas } from "./texture";
+
 const vSrc = `#version 300 es
 precision mediump float;
 layout(location=0) in vec4 aPos;
@@ -51,6 +53,12 @@ void main() {
 
 
 /**
+ * @typedef {Object.<string,Float32Array>} Atlas 
+ * @type Atlas
+ */
+var ATLAS
+
+/**
  * initalizeds the webgl contex, and sets up the whole rendering setup
  * it also holds the inital layers used for rendering each part onto the webgl context
  */
@@ -65,65 +73,51 @@ class Layers {
      */
     gl 
 
-    /**
-     * @type {HTMLCanvasElement}
-     */
-    canvas 
+
 
     /**
-     * @typedef {Object.<string,Float32Array>} Atlas 
-     * @type Atlas
+     * @param {ImageData} img 
+     * @param {HTMLCanvasElement} canvas 
      */
-    atlas
-
-    //FIXME gotta add types
-    constructor(canvas,img,atlas) {
+    constructor(canvas,img) {
 
         //setting up webgl and the canvas
-        try {
-            let gl = canvas.getContext("webgl2");
-        
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        let gl = canvas.getContext("webgl2");
+    
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-            //bind program TODO can be layer specific
-            const prog = gl.createProgram();
-            const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-            const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-            gl.shaderSource(vertexShader, vSrc);
-            gl.compileShader(vertexShader);
-            gl.attachShader(prog, vertexShader);
-            gl.shaderSource(fragShader, fSrc);
-            gl.compileShader(fragShader);
-            gl.attachShader(prog, fragShader);
+        //bind program TODO can be layer specific
+        const prog = gl.createProgram();
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(vertexShader, vSrc);
+        gl.compileShader(vertexShader);
+        gl.attachShader(prog, vertexShader);
+        gl.shaderSource(fragShader, fSrc);
+        gl.compileShader(fragShader);
+        gl.attachShader(prog, fragShader);
 
-            gl.linkProgram(prog);
-            gl.useProgram(prog);
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
 
-            //bind texture TODO can be layer specific
-            const texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        //bind texture TODO can be layer specific
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
-            this.gl = gl
-        } catch (e){
-            throw e
-        }
-
+        this.gl = gl
     }
 
     /**
      * add a layer 
-     * @param {number|[number,number]} size 
-     * @param {[number,number]} [start]
-     * @param {[number,number]} [end]
-     * @param {Array<Float32Array>} [bufferData]
+     * @param {Object} [options]
+     * @param {Quad|GridDef} [options.params]
+     * @param {number} [length=1]
      */
-    add(size,[height,width],bufferData) {
-        //FIXME
-        //calls the constructor for layer
-        //and lets it do is business
+    add(options,length) {
+        this.#layers.push(new Layer(this.gl,options,length))
     }
 
     /**
@@ -134,7 +128,7 @@ class Layers {
       // cns.width = cns.clientWidth;
       // cns.height = cns.clientHeight;
       this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
-      this.gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this.#layers.forEach(l=>l.render(this.gl))
     }
 
@@ -234,28 +228,33 @@ class Layer {
         else if(options?.params?.rows) {
             //setup grid
             let grid = Layer.CreateVerticesGrid(options.params)
+            this.#rows = options.params.rows
+            this.#columns = options.params.columns
+
             this.#length = options.params.rows * options.params.columns
             this.data.push(grid) //the two is for the two floats that makeup a point
             this.data.push(new Float32Array(grid.length)) //map atlas points to vertex points
-            this.data.push(new Float32Array(6*length*3)) //colors is a vec3
+            this.data.push(new Float32Array(6*this.#length*3)) //colors is a vec3
         }
 
         this.vao = gl.createVertexArray();
         gl.bindVertexArray(this.vao)
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.VERTICES)
+        this.buffers.push(gl.createBuffer())
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[Layer.bufferEnum.VERTICES])
         gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.VERTICES],
             gl.STATIC_DRAW)
         gl.vertexAttribPointer(Layer.bufferEnum.VERTICES,2,gl.FLOAT,false,0,0)
         gl.enableVertexAttribArray(Layer.bufferEnum.VERTICES)
         
-        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.TEXS)
+        this.buffers.push(gl.createBuffer())
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[Layer.bufferEnum.TEXS])
         gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.TEXS],
             gl.DYNAMIC_DRAW)
         gl.vertexAttribPointer(Layer.bufferEnum.TEXS,2,gl.FLOAT,false,0,0)
         gl.enableVertexAttribArray(Layer.bufferEnum.TEXS)
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, Layer.bufferEnum.COLORS)
+        this.buffers.push(gl.createBuffer())
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[Layer.bufferEnum.COLORS])
         gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum.COLORS],
             gl.DYNAMIC_DRAW)
         gl.vertexAttribPointer(Layer.bufferEnum.COLORS,3,gl.FLOAT,false,0,0)
@@ -269,6 +268,12 @@ class Layer {
      * renders vao/layer onto webgl context
      */
     render(gl) {
+        for (const index in Layer.bufferEnum) {
+            gl.bindBuffer(gl.ARRAY_BUFFER,this.buffers[Layer.bufferEnum[index]])
+            gl.bufferData(gl.ARRAY_BUFFER,this.data[Layer.bufferEnum[index]],
+               index=="VERTICES"?gl.STATIC_DRAW:gl.DYNAMIC_DRAW)
+        }
+
         gl.bindVertexArray(this.vao)
         gl.drawArrays(gl.TRIANGLES,0,6*this.#length)
         gl.bindVertexArray(null)
@@ -295,9 +300,14 @@ class Layer {
      *  @param {string} value - assumes atlas value
      */
     setQuadTex(index,value) {
-        //FIXME get index and set column value
-        // let i = r*C+c
-        // texCordData.set(atlas[value],i*12)
+        console.log(index)
+        if (typeof index == "number") {
+            this.data[Layer.bufferEnum.TEXS].set(ATLAS[value],index*12)
+        } else {
+            let i = index.r * this.#columns + index.c
+            console.log(i)
+            this.data[Layer.bufferEnum.TEXS].set(ATLAS[value],i*12)
+        }
     }
 
     /**
@@ -305,9 +315,12 @@ class Layer {
      *  @param {Float32Array} color - rgb 1-0
      */
     setQuadColor(index, color) {
-        //FIXME get index and set column value
-        // let i = r*C+c
-        // colorData.set(color,i*3)
+        if (index.r && index.c) {
+            let i = index.r * this.#columns * index.c
+            this.data[Layer.bufferEnum.COLORS].set(color,i*3)
+        } else {
+            this.data[Layer.bufferEnum.COLORS].set(color,index*3)
+        }
     }
 
     /**
@@ -330,7 +343,7 @@ class Layer {
         ]
         console.log(stepX,"STEPX")
         console.log(stepY,"STEPY")
-        let [startX,startY] = start
+        let {x:startX,y:startY} = start
 
         for (let i = 0; i <rows*columns; i++){
             let current_Col = i%columns
@@ -394,6 +407,7 @@ class Quad {
      */
     step(dir,scale){
         //FIXME check if in bounds with webgl context
+        //this is also bad
         scale = scale??1
         for (let i = 0; i<12;i+=2){
             this.#values[i] += this.#values[i]*scale*dir.x
@@ -428,6 +442,46 @@ class Quad {
     // diff(q){ }
     
     
+}
+
+
+
+
+/**
+ * @type {Layers}
+ */
+let layers;
+
+
+/**
+ * @param {HTMLCanvasElement} canvas 
+ */
+export async function init(canvas) {
+    let {img,atlas} = await genAtlas("monogram.ttf")
+    ATLAS = atlas
+    layers = new Layers(canvas,img)
+    console.log(layers)
+}
+
+/**
+ * @param {Object} [options]
+ * @param {Quad|GridDef} [options.params]
+ * @param {number} [length=1]
+ */
+export function addLayer(options,length=1) {
+    layers.add(options,length)
+}
+
+/**
+ * @param {number} index 
+ * @returns {Layer}
+ */
+export function getLayer(index){
+    return layers.get(index)
+}
+
+export function render() {
+    layers.render()
 }
 
 

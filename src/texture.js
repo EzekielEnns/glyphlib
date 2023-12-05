@@ -5,13 +5,14 @@ import { load } from 'opentype.js'
 
 0,0         1,0 
 */
-export interface AtlasMap {
-    [glpyh:string]: Array<number>
-}
-
-export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:AtlasMap}> {
+/**
+ * @param {string} f 
+ * @param {number} [size=72] 
+ * @returns {Promise<{img:ImageData, atlas:Atlas}>}
+ */
+export async function genAtlas(f,size=72) {
     const columns = 26; //26 cuase i felt like it (can be any value)
-    let aMap:AtlasMap = {}
+    let aMap = {}
     let row = 0;
     const font = await load(f)
     let rowStep= (font.ascender/font.unitsPerEm * size) + Math.abs((font.descender/font.unitsPerEm * size))
@@ -59,4 +60,3 @@ export async function genAtlas(f:string,size=72):Promise<{img:ImageData, atlas:A
     }
     return {img:ctx.getImageData(0,0,bitmap.width,bitmap.height),atlas:aMap}
 }
-
