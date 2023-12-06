@@ -85,7 +85,11 @@ class Layers {
         let gl = canvas.getContext("webgl2");
     
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
+        //FIXME look into how this works
+        //https://xem.github.io/articles/webgl-guide-part-2.html
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        //gl.enable(gl.DEPTH_TEST);
         //bind program TODO can be layer specific
         const prog = gl.createProgram();
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);

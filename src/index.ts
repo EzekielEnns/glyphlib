@@ -17,7 +17,18 @@ import { init,render,addLayer,getLayer } from "./lib";
     }})
 
     let l1 = getLayer(0)
-    l1.setQuadTex({c:2,r:2},"1")
+    l1.setQuadTex({c:0,r:0},"-")
+    addLayer({params:{
+        columns: 10,
+        rows:10,
+        start:{x:-1,y:1},
+        end:{x:1,y:-1},
+    }})
+    
+    let l2 = getLayer(1)
+    l2.setQuadTex({c:0,r:0},"1")
+    //green
+    l2.setQuadColor({c:0,r:0},new Float32Array([0,1.0,0.0]))
 
     
     requestAnimationFrame(renderLoop);
