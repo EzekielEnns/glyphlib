@@ -176,6 +176,24 @@ class Layer {
     /**
      * @type {number}
      */
+    #CellHeight
+    /**
+     * @type {number}
+     */
+    #CellWidth
+    
+    /**
+     * @type {Coord}
+     */
+    #start
+    /**
+     * @type {Coord}
+     */
+    #end
+
+    /**
+     * @type {number}
+     */
     #columns = 0;
     /**
      * @type {number}
@@ -203,15 +221,14 @@ class Layer {
 
     /**
      * @typedef {{x:number,y:number}} Coord
-     * @typedef {{start:Coord,end:Coord,rows:number,columns:number}} GridDef
+     * @typedef {{start:Coord,end:Coord,rows:number,columns:number,noFill:boolean}} GridDef
      * @param {WebGL2RenderingContext} gl 
      * @param {Object} [options]
      * @param {Quad|GridDef} [options.params]
      * @param {number} [length=1]
      */
-    constructor(gl,options,length) {
-        length = length??1
-
+    constructor(gl,options,length=1) {
+        //FIXME replace with no fill
         if (options instanceof Quad) {
             //add quads
             this.#length = length
@@ -231,13 +248,26 @@ class Layer {
         } 
         else if(options?.params?.rows) {
             //setup grid
-            let grid = Layer.CreateVerticesGrid(options.params)
+
+            let cells = options.params.noFill? new Float32Array(length*6*2)
+                :Layer.CreateVerticesGrid(options.params)
             this.#rows = options.params.rows
             this.#columns = options.params.columns
+            this.#start = options.params.start
+            this.#end = options.params.end
 
-            this.#length = options.params.rows * options.params.columns
-            this.data.push(grid) //the two is for the two floats that makeup a point
-            this.data.push(new Float32Array(grid.length)) //map atlas points to vertex points
+            this.#CellWidth = Math.abs(this.#end.x- 
+                this.#start.x)/this.#columns
+            this.#CellHeight = Math.abs(this.#end.y- 
+                this.#start.y)/this.#rows
+            //FIXME itterate over length and set these 
+            if (options.params.noFill){
+                cells.set(this.getCell({c:0,r:0}).values)
+            }
+            this.#length = options.params.noFill? length
+                : this.#rows * this.#columns
+            this.data.push(cells) //the two is for the two floats that makeup a point
+            this.data.push(new Float32Array(cells.length)) //map atlas points to vertex points
             this.data.push(new Float32Array(6*this.#length*3)) //colors is a vec3
         }
 
@@ -288,15 +318,54 @@ class Layer {
      */
 
     /**
+     * @param {Index} index 
+     * @returns {Quad}
+     */
+    getCell(index) {
+        /**
+         * @type {c:number,r:number}
+         */
+        let i = typeof index == "number"? {
+            c: i%this.#columns,
+            r: (index-(i%this.#columns))/this.#columns
+        }:index
+        let top = this.#start.y - i.r*this.#CellHeight
+        let bottom = top - this.#CellHeight
+        let left = this.#start.x + i.c*this.#CellWidth
+        let right = left + this.#CellWidth
+        return new Quad(new Float32Array([
+            left,top,
+            left,bottom,
+            right,bottom,
+
+            left,top,
+            right,top,
+            right,bottom
+        ]))
+        
+    }
+
+    /**
      *  this function chunks up the buffer data into quads
      *  right now quads are 6 points/ 12 floats 
      *  @param {Index} index - location for quad
      *  @returns {Quad}
      */
     getQuad(index) {
+        let i = this.getIndex(index)
         //FIXME get index
         return new Quad(this.data[Layer.bufferEnum.VERTICES]
-            .slice(index,index+12));
+            .slice(i,i+12));
+    }
+
+    /**
+     * @param {Index} index - location for quad
+     * @param {Quad} value 
+     */
+    setQuad(index,value){
+        this.data[Layer.bufferEnum.VERTICES].set(value.values,
+            this.getIndex(index)*12
+        )
     }
     
     /**
@@ -304,14 +373,9 @@ class Layer {
      *  @param {string} value - assumes atlas value
      */
     setQuadTex(index,value) {
-        console.log(index)
-        if (typeof index == "number") {
-            this.data[Layer.bufferEnum.TEXS].set(ATLAS[value],index*12)
-        } else {
-            let i = index.r * this.#columns + index.c
-            console.log(i)
-            this.data[Layer.bufferEnum.TEXS].set(ATLAS[value],i*12)
-        }
+        this.data[Layer.bufferEnum.TEXS].set(ATLAS[value],
+            this.getIndex(index)*12
+        )
     }
 
     /**
@@ -319,14 +383,23 @@ class Layer {
      *  @param {Float32Array} color - rgb 1-0
      */
     setQuadColor(index, color) {
-        if (index.r && index.c) {
-            let i = index.r * this.#columns * index.c
-            this.data[Layer.bufferEnum.COLORS].set(color,i*3)
+        this.data[Layer.bufferEnum.COLORS].set(color,
+            this.getIndex(index)*3
+        )
+    }
+    
+    /**
+     * @param {Index} index 
+     * @returns {number}
+     */
+    getIndex(index){
+        //FIXME if type is set to noFill, 
+        if (typeof index == "number") {
+            return index
         } else {
-            this.data[Layer.bufferEnum.COLORS].set(color,index*3)
+            return index.r * this.#columns + index.c
         }
     }
-
     /**
      * creates a unoptimized grid of vertices, these are quads
      * that overlap on the dimentions specifed, note start and end are normalized coords
@@ -374,6 +447,8 @@ class Layer {
 
         return verts
     }
+
+
 }
 
 
@@ -420,6 +495,8 @@ class Quad {
         return this
     }
 
+    //FIXME add a diff function
+
     /**
      * returns a quad with all points scaled to a factor 
      *
@@ -443,7 +520,7 @@ class Quad {
     //TODO
     // add(q){ }
     // sub(q){ }
-    // diff(q){ }
+    // rotate {}
     
     
 }
