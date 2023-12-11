@@ -29,9 +29,13 @@ import { init,render,addLayer,getLayer } from "./lib";
     
     let l2 = getLayer(1)
     l2.setQuadTex(0,"1")
-    l2.setQuad(0,l2.getCell({c:3,r:4}))
+    l2.setQuad(0,l2.getCell({c:9,r:9}))
+    let test =  l2.getQuad(0).diff(l2.getCell({c:0,r:0}))    
+    console.log("REEEE",test)
+
     //green
     l2.setQuadColor(0,new Float32Array([0,1.0,0.0]))
+
 
     
     requestAnimationFrame(renderLoop);
