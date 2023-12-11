@@ -1,3 +1,9 @@
+## progress
+- [ ] diff function for quad 
+- [ ] test out basic animation
+- [ ] fix glsl color shading 
+- [ ] fini documentiatons 
+
 ## process for making this lib
 
 started with inital idea/experimentation with webgl
