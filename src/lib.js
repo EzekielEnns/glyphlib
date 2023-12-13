@@ -500,11 +500,12 @@ class Quad {
    *@param {number} [scale=1]
    *@returns {Quad}
    */
-  diff({values}, scale=1) {
-    console.log("hi")
+  diff(target, scale=1) {
+    let values = target.values
     for (let i = 0; i<12; i+= 2){
-      this.#values.set((values[i]-this.#values[i])*scale,
-        (values[i+1]-this.#values[i+1])*scale )
+      let x = (values[i]-this.#values[i])*scale
+      let y  = (values[i+1]-this.#values[i+1])*scale
+      this.#values.set([this.#values[i]+x,this.#values[i+1]+y],i)
     }
     return this
   }
