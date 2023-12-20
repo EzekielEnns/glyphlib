@@ -28,7 +28,7 @@ import { init,render,addLayer,getLayer } from "./lib";
     }})
     
     let l2 = getLayer(1)
-    l2.setQuadTex(0,"1")
+    l2.setQuadTex(0,"A")
     let q1 = l2.getCell({c:9,r:9})
     l2.setQuad(0,q1)
     let orig = new Float32Array(q1.values)
@@ -40,7 +40,7 @@ import { init,render,addLayer,getLayer } from "./lib";
     }) 
 
     //green
-    l2.setQuadColor(0,new Float32Array([0,1.0,0.0]))
+    l2.setQuadColor(0,new Float32Array([0,1.0,1.0]))
 
 
     

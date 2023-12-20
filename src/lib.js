@@ -43,7 +43,7 @@ void main() {
     // Check if the pixel color is close to black
     if (texColor.r < threshold && texColor.g < threshold && texColor.b < threshold) {
         // Replace black with red color
-        fragColor = vec4(0.5,0.5,0.5, texColor.a); // Red color (change as desired)
+        //fragColor = vec4(0.5,0.5,0.5, texColor.a); // Red color (change as desired)
         fragColor = vec4(vColor, texColor.a); // Red color (change as desired)
     } else {
         fragColor = texColor;
@@ -385,6 +385,10 @@ class Layer {
   setQuadColor(index, color) {
     this.data[Layer.bufferEnum.COLORS].set(color,
       this.getIndex(index) * 3
+    )
+
+    this.data[Layer.bufferEnum.COLORS].set(color,
+      this.getIndex(index+3) * 3
     )
   }
 
