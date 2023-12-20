@@ -12,10 +12,10 @@ const vSrc = `#version 300 es
 precision mediump float;
 layout(location=0) in vec4 aPos;
 layout(location=1) in vec2 aTexCoord;
-layout(location=2) in vec3 aColor;
+layout(location=2) in vec4 aColor;
 
 out vec2 vTexCoord;
-out vec3 vColor;
+out vec4 vColor;
 void main() {
     gl_Position = aPos;
     vTexCoord = aTexCoord;
@@ -28,7 +28,7 @@ const fSrc = `#version 300 es
 precision mediump float;
 
 in vec2 vTexCoord;
-in vec3 vColor;
+in vec4 vColor;
 
 uniform sampler2D uSampler;
 
@@ -44,7 +44,7 @@ void main() {
     if (texColor.r < threshold && texColor.g < threshold && texColor.b < threshold) {
         // Replace black with red color
         //fragColor = vec4(0.5,0.5,0.5, texColor.a); // Red color (change as desired)
-        fragColor = vec4(vColor, texColor.a); // Red color (change as desired)
+        fragColor = vec4(vColor.xyz, texColor.a*vColor.w); // Red color (change as desired)
     } else {
         fragColor = texColor;
     }
@@ -234,7 +234,7 @@ class Layer {
       this.#length = length
       this.data.push(new Float32Array(6 * 2 * length)) //the two is for the two floats that makeup a point
       this.data.push(new Float32Array(6 * 2 * length)) //map atlas points to vertex points
-      this.data.push(new Float32Array(6 * length * 3)) //colors is a vec3
+      this.data.push(new Float32Array(6 * length * 4)) //colors is a vec3
 
       for (let i = 0; i < 6 * length; i++) {
         this.data[0].set(options.values, i * 6)
@@ -268,7 +268,7 @@ class Layer {
         : this.#rows * this.#columns
       this.data.push(cells) //the two is for the two floats that makeup a point
       this.data.push(new Float32Array(cells.length)) //map atlas points to vertex points
-      this.data.push(new Float32Array(6 * this.#length * 3)) //colors is a vec3
+      this.data.push(new Float32Array(6 * this.#length * 4)) //colors is a vec3
     }
 
     this.vao = gl.createVertexArray();
@@ -291,7 +291,7 @@ class Layer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers[Layer.bufferEnum.COLORS])
     gl.bufferData(gl.ARRAY_BUFFER, this.data[Layer.bufferEnum.COLORS],
       gl.DYNAMIC_DRAW)
-    gl.vertexAttribPointer(Layer.bufferEnum.COLORS, 3, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribPointer(Layer.bufferEnum.COLORS, 4, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(Layer.bufferEnum.COLORS)
 
     gl.bindVertexArray(null);
@@ -383,13 +383,11 @@ class Layer {
    *  @param {Float32Array} color - rgb 1-0
    */
   setQuadColor(index, color) {
-    this.data[Layer.bufferEnum.COLORS].set(color,
-      this.getIndex(index) * 3
-    )
-
-    this.data[Layer.bufferEnum.COLORS].set(color,
-      this.getIndex(index+3) * 3
-    )
+    for (let i = 0; i<6; i++){
+      this.data[Layer.bufferEnum.COLORS].set(color,
+        (this.getIndex(index)+i) * 4
+      )
+    }
   }
 
   /**

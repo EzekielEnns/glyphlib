@@ -40,7 +40,12 @@ import { init,render,addLayer,getLayer } from "./lib";
     }) 
 
     //green
-    l2.setQuadColor(0,new Float32Array([0,1.0,1.0]))
+    l2.setQuadColor(0,new Float32Array([
+        0.0,
+        0.0,
+        1.0,
+        1.0
+    ]))
 
 
     
