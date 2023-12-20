@@ -51,11 +51,17 @@ import { init,render,addLayer,getLayer } from "./lib";
     
     requestAnimationFrame(renderLoop);
 })()
-
+var alpha = 1.0
 function renderLoop() {
     render()
     let l1 = getLayer(1)
     let q1 = l1.getQuad(0)
+    let l0 = getLayer(0)
+    l0.setQuadColor({c:0,r:0},new Float32Array([0,0,0,alpha]))
     l1.setQuad(0,q1.diff(l1.getCell({c:0,r:0}),0.01))
-    requestAnimationFrame(renderLoop)
+    alpha = alpha-0.01
+    if (alpha <= 0)
+        alpha = 1
+   requestAnimationFrame(renderLoop)
+
 }

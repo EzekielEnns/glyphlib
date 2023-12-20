@@ -228,25 +228,7 @@ class Layer {
    * @param {number} [length=1]
    */
   constructor(gl, options, length = 1) {
-    //FIXME replace with no fill
-    if (options instanceof Quad) {
-      //add quads
-      this.#length = length
-      this.data.push(new Float32Array(6 * 2 * length)) //the two is for the two floats that makeup a point
-      this.data.push(new Float32Array(6 * 2 * length)) //map atlas points to vertex points
-      this.data.push(new Float32Array(6 * length * 4)) //colors is a vec3
-
-      for (let i = 0; i < 6 * length; i++) {
-        this.data[0].set(options.values, i * 6)
-        if (options.width > 1) {
-          options.step(0, 1)
-        } else {
-          options.step(1, 0)
-        }
-        //no y over flow detected 
-      }
-    }
-    else if (options?.params?.rows) {
+     if (options?.params?.rows) {
       //setup grid
 
       let cells = options.params.noFill ? new Float32Array(length * 6 * 2)
@@ -269,6 +251,10 @@ class Layer {
       this.data.push(cells) //the two is for the two floats that makeup a point
       this.data.push(new Float32Array(cells.length)) //map atlas points to vertex points
       this.data.push(new Float32Array(6 * this.#length * 4)) //colors is a vec3
+      //default they are not all invisible
+      for (let i=3; i < (6 * this.#length * 4); i+=4) {
+          this.data[Layer.bufferEnum.COLORS][i]=1.0
+      }
     }
 
     this.vao = gl.createVertexArray();
