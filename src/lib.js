@@ -539,9 +539,10 @@ let layers;
 
 /**
  * @param {HTMLCanvasElement} canvas 
+ * @param {string} filename 
  */
-export async function init(canvas) {
-  let { img, atlas } = await genAtlas("monogram.ttf")
+export async function init(canvas,filename) {
+  let { img, atlas } = await genAtlas(filename)
   ATLAS = atlas
   layers = new Layers(canvas, img)
   console.log(layers)
