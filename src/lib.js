@@ -73,6 +73,11 @@ class Layers {
    */
   gl
 
+  /**
+   * @type {HTMLCanvasElement}
+   */
+   canvas
+
 
 
   /**
@@ -80,7 +85,8 @@ class Layers {
    * @param {HTMLCanvasElement} canvas 
    */
   constructor(canvas, img) {
-
+    
+    this.canvas = canvas
     //setting up webgl and the canvas
     let gl = canvas.getContext("webgl2");
 
@@ -567,6 +573,25 @@ export function getLayer(index) {
 
 export function render() {
   layers.render()
+}
+
+//TODO add layer options here i.e. layer indexin
+/*TODO map from x, y to webgl x,y
+ * we re address left addressing to a orgin/cartisan plain
+ *      then we also have to normalize the/un normalize the coords
+ *  so it would be like 
+ *      x/left and y/top == our normalized coords
+ */
+function addLayerClickListener(){
+    layers.canvas.addEventListener("click",(e)=>{
+        let left = layers.canvas.offsetLeft + layers.canvas.clientLeft,
+            top = layers.canvas.offsetTop + layers.canvas.clientTop;
+        let x = e.pageX - left,
+            y = e.pageY - top;
+
+        //TODO use x and y to determine nearest cell for layer
+        
+    },false)
 }
 
 

@@ -1,12 +1,12 @@
 {
   "name": "glyplib",
   "main": "./dist/lib.js",
+  "types":"./dist/lib.d.ts",
   "scripts":{
       "build":"pnpm webpack -c ./webpack.config.js --mode=production && pnpm tsc",
       "clean":"rm -f dist/*"
   },
   "devDependencies": {
-    "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
