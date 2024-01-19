@@ -2,7 +2,7 @@
   "name": "glyplib",
   "main": "./dist/lib.js",
   "types":"./dist/lib.d.ts",
-  "version":"0.0.1",
+  "version":"0.0.2",
   "scripts":{
       "build":"pnpm webpack -c ./webpack.config.js --mode=production && pnpm tsc",
       "clean":"rm -f dist/*"
