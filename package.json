@@ -1,14 +1,14 @@
 {
   "name": "glyplib",
   "main": "./dist/lib.js",
-  "types":"./dist/lib.d.ts",
-  "version":"0.0.3",
+  "types": "./dist/lib.d.ts",
+  "version": "0.0.4",
   "publishConfig": {
     "publish-branch": "prod"
   },
-  "scripts":{
-      "build":"pnpm webpack -c ./webpack.config.js --mode=production && pnpm tsc",
-      "clean":"rm -f dist/*"
+  "scripts": {
+    "build": "pnpm webpack -c ./webpack.config.js --mode=production && pnpm tsc",
+    "clean": "rm -f dist/*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
